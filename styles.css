@@ -218,7 +218,7 @@ section[id], #top { scroll-margin-top: 110px; }
 }
 
 .logo { display: inline-flex; align-items: center; white-space: nowrap; flex-shrink: 0; }
-.logo-img { height: 36px; width: auto; display: block; }
+.logo-img { height: 26px; width: auto; display: block; }
 .footer-brand .logo-img { height: 26px; }
 
 .nav-links {
