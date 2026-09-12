@@ -357,7 +357,7 @@ if (finePointer) {
 
 /* ---------- Roaming border light on glass CTAs (header CTA uses its own continuous beam instead) ---------- */
 if (finePointer) {
-  document.querySelectorAll(".btn-glass:not(.nav-cta)").forEach((btn) => {
+  document.querySelectorAll(".btn-glass:not(.nav-cta):not(.hero-cta)").forEach((btn) => {
     let queued = false;
     let mx = 0, my = 0;
     btn.addEventListener("mousemove", (e) => {

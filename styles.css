@@ -355,7 +355,8 @@ section[id], #top { scroll-margin-top: 110px; }
     linear-gradient(155deg, rgba(255, 208, 0, 0.26), rgba(255, 208, 0, 0.06));
   border-color: rgba(255, 208, 0, 0.32);
 }
-.nav-cta.btn-glass.btn-solid {
+.nav-cta.btn-glass.btn-solid,
+.hero-cta.btn-glass.btn-solid {
   background: linear-gradient(180deg, rgba(20, 19, 17, 0.85), rgba(10, 10, 9, 0.92));
   border-color: rgba(255, 255, 255, 0.08);
   color: var(--chalk);
@@ -402,8 +403,10 @@ section[id], #top { scroll-margin-top: 110px; }
   inherits: false;
   initial-value: 0deg;
 }
-.nav-cta.btn-glass::before { content: none; }
-.nav-cta.btn-glass::after {
+.nav-cta.btn-glass::before,
+.hero-cta.btn-glass::before { content: none; }
+.nav-cta.btn-glass::after,
+.hero-cta.btn-glass::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -429,12 +432,14 @@ section[id], #top { scroll-margin-top: 110px; }
   animation: beam-spin 5.5s linear infinite;
   transition: opacity 0.4s var(--ease-soft);
 }
-.nav-cta.btn-glass:hover::after { opacity: 1; }
+.nav-cta.btn-glass:hover::after,
+.hero-cta.btn-glass:hover::after { opacity: 1; }
 @keyframes beam-spin {
   to { --beam-angle: 360deg; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .nav-cta.btn-glass::after { animation: none; }
+  .nav-cta.btn-glass::after,
+  .hero-cta.btn-glass::after { animation: none; }
 }
 
 .hamburger {
