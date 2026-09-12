@@ -392,6 +392,37 @@ if (finePointer) {
   });
 }
 
+/* ---------- Magnetic buttons ---------- */
+if (finePointer) {
+  const pullStrength = 0.35;
+  const maxPull = 10; // px
+  document.querySelectorAll(".btn").forEach((btn) => {
+    let queued = false;
+    let tx = 0, ty = 0;
+    btn.addEventListener("mouseenter", () => {
+      btn.style.transition = "transform 0.06s linear";
+    });
+    btn.addEventListener("mousemove", (e) => {
+      const rect = btn.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      tx = Math.max(-maxPull, Math.min(maxPull, (e.clientX - cx) * pullStrength));
+      ty = Math.max(-maxPull, Math.min(maxPull, (e.clientY - cy) * pullStrength));
+      if (!queued) {
+        queued = true;
+        requestAnimationFrame(() => {
+          btn.style.transform = `translate(${tx}px, ${ty}px)`;
+          queued = false;
+        });
+      }
+    });
+    btn.addEventListener("mouseleave", () => {
+      btn.style.transition = "transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)";
+      btn.style.transform = "";
+    });
+  });
+}
+
 /* ---------- Lightbox ---------- */
 const lightbox = document.getElementById("lightbox");
 const lightboxVideo = document.getElementById("lightbox-video");
