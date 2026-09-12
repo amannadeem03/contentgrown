@@ -461,7 +461,7 @@ section[id], #top { scroll-margin-top: 110px; }
   min-height: 100vh;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   overflow: hidden;
 }
 .hero-bg {
@@ -501,15 +501,15 @@ section[id], #top { scroll-margin-top: 110px; }
 .hero-content {
   position: relative;
   z-index: 2;
-  text-align: center;
+  text-align: left;
   max-width: 880px;
-  padding: 140px 24px 0;
+  padding: 140px 24px 0 clamp(24px, 7vw, 100px);
 }
 .eyebrow-rule {
   width: 44px;
   height: 1.5px;
-  background: linear-gradient(90deg, transparent, var(--amber), transparent);
-  margin: 0 auto 22px;
+  background: linear-gradient(90deg, var(--amber), transparent);
+  margin: 0 0 22px;
 }
 .eyebrow {
   font-family: var(--font-body);
@@ -528,7 +528,7 @@ section[id], #top { scroll-margin-top: 110px; }
   margin-bottom: 36px;
   text-transform: uppercase;
 }
-.hero-title .amber-word { display: inline-flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 0.28em; }
+.hero-title .amber-word { display: inline-flex; flex-wrap: wrap; justify-content: flex-start; align-items: center; gap: 0.28em; }
 .w-letter-word { display: inline-flex; align-items: center; }
 .hero-title .w-letter {
   height: 0.7em;
