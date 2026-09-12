@@ -551,9 +551,10 @@ section[id], #top { scroll-margin-top: 110px; }
 .hero-title {
   font-size: clamp(2.7rem, 6.8vw, 5.3rem);
   font-weight: 600;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.04em;
   line-height: 1.04;
   margin-bottom: 36px;
+  text-transform: uppercase;
 }
 .hero-title .amber-word { display: inline-flex; align-items: center; gap: 0.06em; }
 .arrow-icon { height: 0.62em; width: auto; display: inline-block; }
