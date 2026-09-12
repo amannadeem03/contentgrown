@@ -1,3 +1,11 @@
+/* ---------- Smooth hero background video loop ---------- */
+document.querySelectorAll(".hero-loop").forEach((v) => {
+  v.addEventListener("ended", () => {
+    v.currentTime = 0;
+    v.play().catch(() => {});
+  });
+});
+
 /* ---------- Shared: autoplay preview videos as they scroll into view ---------- */
 const scrollAutoplayObserver = new IntersectionObserver((entries) => {
   entries.forEach((entry) => {

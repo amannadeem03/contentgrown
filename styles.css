@@ -470,7 +470,7 @@ section[id], #top { scroll-margin-top: 110px; }
   z-index: -1;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 2px;
+  gap: 0;
   overflow: hidden;
 }
 .hero-bg-col {
@@ -493,8 +493,8 @@ section[id], #top { scroll-margin-top: 110px; }
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(60% 55% at 50% 38%, transparent 0%, rgba(8, 8, 9, 0.55) 100%),
-    linear-gradient(180deg, rgba(8, 8, 9, 0.55) 0%, rgba(8, 8, 9, 0.35) 35%, rgba(8, 8, 9, 0.75) 100%);
+    radial-gradient(60% 55% at 50% 38%, rgba(8, 8, 9, 0.35) 0%, rgba(8, 8, 9, 0.78) 100%),
+    linear-gradient(180deg, rgba(8, 8, 9, 0.82) 0%, rgba(8, 8, 9, 0.58) 30%, rgba(8, 8, 9, 0.88) 100%);
   z-index: 0;
   pointer-events: none;
 }
