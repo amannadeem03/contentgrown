@@ -297,6 +297,22 @@ const mobileMenu = document.getElementById("mobile-menu");
 hamburger.addEventListener("click", () => mobileMenu.classList.toggle("open"));
 mobileMenu.querySelectorAll("a").forEach(a => a.addEventListener("click", () => mobileMenu.classList.remove("open")));
 
+/* ---------- Sliding nav hover indicator ---------- */
+const navEl = document.querySelector(".nav");
+const navIndicator = document.getElementById("nav-indicator");
+const navHoverLinks = document.querySelectorAll(".nav-links a");
+function moveIndicatorTo(link) {
+  const navRect = navEl.getBoundingClientRect();
+  const linkRect = link.getBoundingClientRect();
+  navIndicator.style.left = (linkRect.left - navRect.left) + "px";
+  navIndicator.style.width = linkRect.width + "px";
+  navIndicator.classList.add("visible");
+}
+navHoverLinks.forEach(link => {
+  link.addEventListener("mouseenter", () => moveIndicatorTo(link));
+});
+navEl.addEventListener("mouseleave", () => navIndicator.classList.remove("visible"));
+
 /* ---------- Nav scroll-spy (active pill state) ---------- */
 const navLinkByTarget = {};
 document.querySelectorAll("#nav-links a[data-target]").forEach(a => {
@@ -339,9 +355,9 @@ if (finePointer) {
   window.addEventListener("pointerleave", () => spotlight.classList.remove("active"));
 }
 
-/* ---------- Roaming border light on glass CTAs ---------- */
+/* ---------- Roaming border light on glass CTAs (header CTA uses its own continuous beam instead) ---------- */
 if (finePointer) {
-  document.querySelectorAll(".btn-glass").forEach((btn) => {
+  document.querySelectorAll(".btn-glass:not(.nav-cta)").forEach((btn) => {
     let queued = false;
     let mx = 0, my = 0;
     btn.addEventListener("mousemove", (e) => {
