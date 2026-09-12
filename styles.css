@@ -217,15 +217,7 @@ section[id], #top { scroll-margin-top: 110px; }
   border-color: rgba(255, 208, 0, 0.16);
 }
 
-.logo {
-  display: inline-flex;
-  align-items: center;
-  white-space: nowrap;
-  flex-shrink: 0;
-  opacity: 1;
-  transition: opacity 0.35s var(--ease-soft);
-}
-.site-header.scrolled .logo { opacity: 0; pointer-events: none; }
+.logo { display: inline-flex; align-items: center; white-space: nowrap; flex-shrink: 0; }
 .logo-img { height: 36px; width: auto; display: block; }
 .footer-brand .logo-img { height: 26px; }
 
