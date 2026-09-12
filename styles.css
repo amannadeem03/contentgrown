@@ -353,6 +353,11 @@ section[id], #top { scroll-margin-top: 110px; }
     linear-gradient(155deg, rgba(255, 208, 0, 0.26), rgba(255, 208, 0, 0.06));
   border-color: rgba(255, 208, 0, 0.32);
 }
+.nav-cta.btn-glass.btn-solid {
+  background: linear-gradient(180deg, rgba(20, 19, 17, 0.85), rgba(10, 10, 9, 0.92));
+  border-color: rgba(255, 255, 255, 0.08);
+  color: var(--chalk);
+}
 .btn-glass:hover {
   border-color: rgba(255, 208, 0, 0.38);
   box-shadow:
