@@ -187,7 +187,7 @@ section[id], #top { scroll-margin-top: 110px; }
 
 .header-row {
   width: 100%;
-  max-width: 1320px;
+  max-width: 1680px;
   margin: 0 auto;
   display: flex;
   align-items: center;
