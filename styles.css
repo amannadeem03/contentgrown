@@ -401,23 +401,25 @@ section[id], #top { scroll-margin-top: 110px; }
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  padding: 1.2px;
+  padding: 1.5px;
   background: conic-gradient(
     from var(--beam-angle),
-    transparent 0deg,
-    transparent 270deg,
-    rgba(255, 208, 0, 0.08) 305deg,
-    rgba(255, 208, 0, 0.4) 335deg,
-    var(--amber-light) 353deg,
-    var(--amber) 359deg,
-    transparent 360deg
+    var(--amber) 0deg,
+    var(--amber-light) 85deg,
+    var(--amber) 165deg,
+    rgba(255, 208, 0, 0.4) 215deg,
+    rgba(255, 208, 0, 0.1) 250deg,
+    transparent 278deg,
+    transparent 312deg,
+    rgba(255, 208, 0, 0.22) 345deg,
+    var(--amber) 360deg
   );
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
-  opacity: 0.6;
+  opacity: 0.85;
   pointer-events: none;
-  animation: beam-spin 4.5s linear infinite;
+  animation: beam-spin 5.5s linear infinite;
   transition: opacity 0.4s var(--ease-soft);
 }
 .nav-cta.btn-glass:hover::after { opacity: 1; }
