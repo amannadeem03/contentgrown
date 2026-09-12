@@ -360,6 +360,34 @@ if (finePointer) {
   });
 }
 
+/* ---------- Cursor-reactive card tilt ---------- */
+if (finePointer) {
+  const tiltMax = 5; // degrees
+  document.querySelectorAll(".work-card, .why-card, .proof-video-card").forEach((card) => {
+    let queued = false;
+    let rotX = 0, rotY = 0;
+    card.style.transformStyle = "preserve-3d";
+    card.style.willChange = "transform";
+    card.addEventListener("mousemove", (e) => {
+      const rect = card.getBoundingClientRect();
+      const px = (e.clientX - rect.left) / rect.width - 0.5;
+      const py = (e.clientY - rect.top) / rect.height - 0.5;
+      rotY = px * tiltMax * 2;
+      rotX = -py * tiltMax * 2;
+      if (!queued) {
+        queued = true;
+        requestAnimationFrame(() => {
+          card.style.transform = `perspective(800px) rotateX(${rotX}deg) rotateY(${rotY}deg) translateY(-2px) scale(1.015)`;
+          queued = false;
+        });
+      }
+    });
+    card.addEventListener("mouseleave", () => {
+      card.style.transform = "";
+    });
+  });
+}
+
 /* ---------- Lightbox ---------- */
 const lightbox = document.getElementById("lightbox");
 const lightboxVideo = document.getElementById("lightbox-video");
