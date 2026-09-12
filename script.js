@@ -333,27 +333,7 @@ const spyObserver = new IntersectionObserver((entries) => {
 }, { rootMargin: "-45% 0px -50% 0px", threshold: 0 });
 spySections.forEach(section => spyObserver.observe(section));
 
-/* ---------- Cursor spotlight (throttled, subtle) ---------- */
-const spotlight = document.querySelector(".spotlight");
 const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-let spotlightQueued = false;
-let lastX = 0, lastY = 0;
-if (finePointer) {
-  window.addEventListener("pointermove", (e) => {
-    lastX = e.clientX;
-    lastY = e.clientY;
-    if (!spotlightQueued) {
-      spotlightQueued = true;
-      requestAnimationFrame(() => {
-        spotlight.style.setProperty("--x", lastX + "px");
-        spotlight.style.setProperty("--y", lastY + "px");
-        spotlight.classList.add("active");
-        spotlightQueued = false;
-      });
-    }
-  });
-  window.addEventListener("pointerleave", () => spotlight.classList.remove("active"));
-}
 
 /* ---------- Roaming border light on glass CTAs (header CTA uses its own continuous beam instead) ---------- */
 if (finePointer) {
