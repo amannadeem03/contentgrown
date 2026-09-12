@@ -199,7 +199,7 @@ section[id], #top { scroll-margin-top: 110px; }
   position: relative;
   display: inline-flex;
   align-items: center;
-  padding: 8px 8px;
+  padding: 16px 16px;
   border-radius: 999px;
   background: rgba(18, 17, 15, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.09);
@@ -216,7 +216,7 @@ section[id], #top { scroll-margin-top: 110px; }
 }
 
 .logo { display: inline-flex; align-items: center; white-space: nowrap; flex-shrink: 0; }
-.logo-img { height: 34px; width: auto; display: block; }
+.logo-img { height: 26px; width: auto; display: block; }
 .footer-brand .logo-img { height: 26px; }
 
 .nav-links {
@@ -334,7 +334,7 @@ section[id], #top { scroll-margin-top: 110px; }
 }
 .btn:hover { transform: translateY(-1px); }
 
-.nav-cta { padding: 12px 22px; font-size: 0.72rem; }
+.nav-cta { padding: 18px 34px; font-size: 0.82rem; margin-right: 32px; }
 
 /* Premium glass surface shared by every "Book a Call" CTA */
 .btn-glass {
