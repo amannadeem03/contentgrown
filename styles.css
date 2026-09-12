@@ -922,6 +922,20 @@ section[id], #top { scroll-margin-top: 110px; }
 @media (max-width: 900px) {
   .nav, .nav-cta { display: none; }
   .hamburger { display: flex; }
+  .header-row {
+    background: rgba(18, 17, 15, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    backdrop-filter: blur(18px) saturate(150%);
+    -webkit-backdrop-filter: blur(18px) saturate(150%);
+    border-radius: 999px;
+    padding: 8px 8px 8px 18px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 20px 44px -26px rgba(0, 0, 0, 0.75);
+    transition: background 0.4s var(--ease-soft), border-color 0.4s var(--ease-soft);
+  }
+  .site-header.scrolled .header-row {
+    background: rgba(14, 13, 11, 0.78);
+    border-color: rgba(255, 208, 0, 0.16);
+  }
   .problem-grid, .how-grid { grid-template-columns: 1fr; }
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
   .work-grid { grid-template-columns: repeat(2, 1fr); }
