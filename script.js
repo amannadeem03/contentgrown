@@ -283,14 +283,10 @@ const revealObserver = new IntersectionObserver((entries) => {
 }, { threshold: 0.15 });
 document.querySelectorAll(".reveal").forEach(el => revealObserver.observe(el));
 
-/* ---------- Header scroll state + scroll progress bar ---------- */
+/* ---------- Header scroll state ---------- */
 const header = document.getElementById("site-header");
-const scrollProgress = document.getElementById("scroll-progress");
 function onScroll() {
   header.classList.toggle("scrolled", window.scrollY > 40);
-  const scrollable = document.documentElement.scrollHeight - window.innerHeight;
-  const pct = scrollable > 0 ? (window.scrollY / scrollable) * 100 : 0;
-  scrollProgress.style.width = pct + "%";
 }
 window.addEventListener("scroll", onScroll);
 onScroll();
