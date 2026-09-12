@@ -504,6 +504,7 @@ section[id], #top { scroll-margin-top: 110px; }
   text-align: left;
   max-width: 1020px;
   padding: 140px 24px 0 clamp(24px, 7vw, 100px);
+  transform: translateY(-5vh);
 }
 .eyebrow-rule {
   width: 44px;
