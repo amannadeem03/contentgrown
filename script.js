@@ -93,6 +93,54 @@ services.forEach((s, i) => {
   servicesList.appendChild(row);
 });
 
+/* ---------- Header services dropdown (desktop hover/focus + mobile accordion) ---------- */
+const serviceCategories = [...new Set(services.map(s => s.tag))];
+function buildServiceLinks(container, extraClass) {
+  serviceCategories.forEach(cat => {
+    const col = document.createElement("div");
+    col.className = extraClass;
+    const items = services.filter(s => s.tag === cat)
+      .map(s => `<a href="#services">${s.title}</a>`).join("");
+    col.innerHTML = extraClass === "services-dropdown-col"
+      ? `<span class="services-dropdown-heading">${cat}</span>${items}`
+      : items;
+    container.appendChild(col);
+  });
+}
+const servicesDropdown = document.getElementById("services-dropdown");
+buildServiceLinks(servicesDropdown, "services-dropdown-col");
+
+const mobileServicesList = document.getElementById("mobile-services-list");
+services.forEach(s => {
+  const a = document.createElement("a");
+  a.href = "#services";
+  a.textContent = s.title;
+  mobileServicesList.appendChild(a);
+});
+
+const servicesDropdownWrap = document.getElementById("services-dropdown-wrap");
+let dropdownCloseTimer = null;
+function openDropdown() {
+  clearTimeout(dropdownCloseTimer);
+  servicesDropdownWrap.classList.add("open");
+}
+function scheduleCloseDropdown() {
+  clearTimeout(dropdownCloseTimer);
+  dropdownCloseTimer = setTimeout(() => servicesDropdownWrap.classList.remove("open"), 180);
+}
+servicesDropdownWrap.addEventListener("mouseenter", openDropdown);
+servicesDropdownWrap.addEventListener("mouseleave", scheduleCloseDropdown);
+servicesDropdownWrap.addEventListener("focusin", openDropdown);
+servicesDropdownWrap.addEventListener("focusout", (e) => {
+  if (!servicesDropdownWrap.contains(e.relatedTarget)) scheduleCloseDropdown();
+});
+
+const mobileServicesToggle = document.getElementById("mobile-services-toggle");
+mobileServicesToggle.addEventListener("click", () => {
+  mobileServicesToggle.classList.toggle("open");
+  mobileServicesList.classList.toggle("open");
+});
+
 /* ---------- How it works ---------- */
 const steps = [
   { title: "Discovery Call", desc: "We look at what you're producing now, where it's breaking down, and what your output actually needs to be. Twenty minutes, no obligation." },
@@ -248,6 +296,26 @@ const hamburger = document.getElementById("hamburger");
 const mobileMenu = document.getElementById("mobile-menu");
 hamburger.addEventListener("click", () => mobileMenu.classList.toggle("open"));
 mobileMenu.querySelectorAll("a").forEach(a => a.addEventListener("click", () => mobileMenu.classList.remove("open")));
+
+/* ---------- Nav scroll-spy (active pill state) ---------- */
+const navLinkByTarget = {};
+document.querySelectorAll("#nav-links a[data-target]").forEach(a => {
+  navLinkByTarget[a.dataset.target] = a;
+});
+const spySections = Object.keys(navLinkByTarget)
+  .map(id => document.getElementById(id))
+  .filter(Boolean);
+const spyObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    const link = navLinkByTarget[entry.target.id];
+    if (!link) return;
+    if (entry.isIntersecting) {
+      Object.values(navLinkByTarget).forEach(a => a.classList.remove("active"));
+      link.classList.add("active");
+    }
+  });
+}, { rootMargin: "-45% 0px -50% 0px", threshold: 0 });
+spySections.forEach(section => spyObserver.observe(section));
 
 /* ---------- Cursor spotlight (throttled, subtle) ---------- */
 const spotlight = document.querySelector(".spotlight");

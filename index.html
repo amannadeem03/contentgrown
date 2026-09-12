@@ -24,11 +24,17 @@
   <div class="header-row">
     <a href="#top" class="logo"><img src="assets/logo-white.png" alt="CONTENTGROWN" class="logo-img"></a>
     <nav class="nav">
-      <ul class="nav-links">
-        <li><a href="#work">Work</a></li>
-        <li><a href="#services">Services</a></li>
-        <li><a href="#why">Why Us</a></li>
-        <li><a href="#faqs">FAQs</a></li>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="#top" data-target="hero">Home</a></li>
+        <li class="nav-item-dropdown" id="services-dropdown-wrap">
+          <a href="#services" data-target="services" class="nav-dropdown-trigger">
+            Services
+            <svg class="nav-chevron" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+          <div class="services-dropdown" id="services-dropdown"></div>
+        </li>
+        <li><a href="#faqs" data-target="faqs">Pricing</a></li>
+        <li><a href="#work" data-target="work">Portfolio</a></li>
       </ul>
     </nav>
     <a href="#book" class="btn btn-solid btn-glass nav-cta">Book a Call</a>
@@ -37,10 +43,14 @@
     </button>
   </div>
   <div class="mobile-menu" id="mobile-menu">
-    <a href="#work">Work</a>
-    <a href="#services">Services</a>
-    <a href="#why">Why Us</a>
-    <a href="#faqs">FAQs</a>
+    <a href="#top">Home</a>
+    <button class="mobile-services-toggle" id="mobile-services-toggle" type="button">
+      Services
+      <svg class="nav-chevron" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <div class="mobile-services-list" id="mobile-services-list"></div>
+    <a href="#faqs">Pricing</a>
+    <a href="#work">Portfolio</a>
     <a href="#book" class="btn btn-solid btn-glass">Book a Call</a>
   </div>
 </header>
