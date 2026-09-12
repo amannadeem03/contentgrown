@@ -90,68 +90,17 @@ p { line-height: 1.68; }
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
-  background: var(--ink);
+  background: #2a2410;
 }
 
 .aurora {
   position: absolute;
   inset: 0;
-  background: linear-gradient(160deg, #0d0c09 0%, #0a0a09 40%, #08080a 100%);
+  background: #2a2410;
 }
 
-/* Flowing gradient blobs — a slow, liquid-motion mesh in the brand palette */
-.blob {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(95px);
-  mix-blend-mode: screen;
-  will-change: transform;
-}
-.blob-1 {
-  width: 65vw;
-  height: 65vw;
-  max-width: 900px;
-  max-height: 900px;
-  top: -22%;
-  right: -18%;
-  background: radial-gradient(circle, rgba(255, 208, 0, 0.5), transparent 68%);
-  animation: drift-1 34s ease-in-out infinite;
-}
-.blob-2 {
-  width: 55vw;
-  height: 55vw;
-  max-width: 760px;
-  max-height: 760px;
-  bottom: -20%;
-  left: -14%;
-  background: radial-gradient(circle, rgba(191, 122, 10, 0.42), transparent 70%);
-  animation: drift-2 42s ease-in-out infinite;
-}
-.blob-3 {
-  width: 42vw;
-  height: 42vw;
-  max-width: 560px;
-  max-height: 560px;
-  top: 32%;
-  left: 42%;
-  background: radial-gradient(circle, rgba(255, 227, 102, 0.3), transparent 72%);
-  animation: drift-3 27s ease-in-out infinite;
-}
-
-@keyframes drift-1 {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33%      { transform: translate(-8vw, 10vh) scale(1.08); }
-  66%      { transform: translate(-14vw, -4vh) scale(0.96); }
-}
-@keyframes drift-2 {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  40%      { transform: translate(10vw, -8vh) scale(1.1); }
-  75%      { transform: translate(4vw, 6vh) scale(0.94); }
-}
-@keyframes drift-3 {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50%      { transform: translate(-6vw, -10vh) scale(1.15); }
-}
+/* Static background — no motion */
+.blob { display: none; }
 
 .grain {
   position: absolute;
