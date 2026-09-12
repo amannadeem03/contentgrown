@@ -521,10 +521,10 @@ section[id], #top { scroll-margin-top: 110px; }
   margin-bottom: 26px;
 }
 .hero-title {
-  font-size: clamp(2.7rem, 6.8vw, 5.3rem);
+  font-size: clamp(2.3rem, 5.4vw, 4.2rem);
   font-weight: 700;
   letter-spacing: -0.04em;
-  line-height: 1.04;
+  line-height: 1.06;
   margin-bottom: 36px;
   text-transform: uppercase;
 }
