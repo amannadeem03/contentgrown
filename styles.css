@@ -217,8 +217,8 @@ section[id], #top { scroll-margin-top: 110px; }
   border-color: rgba(255, 208, 0, 0.16);
 }
 
-.logo { display: inline-flex; align-items: center; white-space: nowrap; flex-shrink: 0; margin-left: -16px; }
-.logo-img { height: 21px; width: auto; display: block; }
+.logo { display: inline-flex; align-items: center; white-space: nowrap; flex-shrink: 0; margin-left: 8px; }
+.logo-img { height: 18px; width: auto; display: block; }
 .footer-brand .logo-img { height: 26px; }
 
 .nav-links {
