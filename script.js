@@ -280,6 +280,92 @@ const statObserver = new IntersectionObserver((entries) => {
 }, { threshold: 0.4 });
 statEls.forEach(el => statObserver.observe(el));
 
+/* ---------- Stat card connector lines + scroll gate ---------- */
+(function () {
+  const grid = document.getElementById("stats-grid");
+  const svg = document.getElementById("stat-connectors");
+  if (!grid || !svg) return;
+
+  const cards = Array.from(grid.querySelectorAll(".stat-card"));
+  const lines = Array.from(svg.querySelectorAll(".stat-connector-line"));
+  let played = false;
+  let locked = false;
+
+  function isSingleRow() {
+    return window.innerWidth > 900 && cards.length > 1 &&
+      Math.abs(cards[0].getBoundingClientRect().top - cards[1].getBoundingClientRect().top) < 2;
+  }
+
+  function layoutLines() {
+    const gridRect = grid.getBoundingClientRect();
+    svg.setAttribute("viewBox", `0 0 ${gridRect.width} ${gridRect.height}`);
+    lines.forEach((path, i) => {
+      const a = cards[i];
+      const b = cards[i + 1];
+      if (!a || !b) return;
+      const ra = a.getBoundingClientRect();
+      const rb = b.getBoundingClientRect();
+      const y = ra.top + ra.height / 2 - gridRect.top;
+      const x1 = ra.right - gridRect.left;
+      const x2 = rb.left - gridRect.left;
+      const midX = (x1 + x2) / 2;
+      path.setAttribute("d", `M ${x1} ${y} C ${midX} ${y} ${midX} ${y} ${x2} ${y}`);
+      const len = path.getTotalLength();
+      path.style.strokeDasharray = String(len);
+      path.style.strokeDashoffset = String(len);
+      path.style.transition = "none";
+    });
+  }
+
+  function preventScroll(e) { e.preventDefault(); }
+  const scrollKeys = ["ArrowDown", "ArrowUp", "PageDown", "PageUp", " ", "Spacebar"];
+  function preventKeyScroll(e) { if (scrollKeys.includes(e.key)) e.preventDefault(); }
+
+  function lockScroll() {
+    locked = true;
+    document.body.classList.add("scroll-locked");
+    window.addEventListener("wheel", preventScroll, { passive: false });
+    window.addEventListener("touchmove", preventScroll, { passive: false });
+    window.addEventListener("keydown", preventKeyScroll);
+  }
+
+  function unlockScroll() {
+    if (!locked) return;
+    locked = false;
+    document.body.classList.remove("scroll-locked");
+    window.removeEventListener("wheel", preventScroll, { passive: false });
+    window.removeEventListener("touchmove", preventScroll, { passive: false });
+    window.removeEventListener("keydown", preventKeyScroll);
+  }
+
+  function playSequence() {
+    if (played || !isSingleRow()) return;
+    played = true;
+    layoutLines();
+    requestAnimationFrame(() => {
+      lockScroll();
+      lines.forEach((path, i) => {
+        setTimeout(() => {
+          path.style.transition = "stroke-dashoffset 0.55s ease";
+          path.style.strokeDashoffset = "0";
+        }, i * 400);
+      });
+      const totalTime = lines.length * 400 + 650;
+      setTimeout(unlockScroll, totalTime);
+      setTimeout(unlockScroll, totalTime + 4000);
+    });
+  }
+
+  const gateObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting && entry.intersectionRatio > 0.7) playSequence();
+    });
+  }, { threshold: [0.7] });
+  gateObserver.observe(grid);
+
+  window.addEventListener("resize", () => { if (played) layoutLines(); });
+})();
+
 /* ---------- Scroll reveal ---------- */
 const revealObserver = new IntersectionObserver((entries) => {
   entries.forEach(entry => {
