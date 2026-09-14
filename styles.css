@@ -686,7 +686,15 @@ section[id], #top { scroll-margin-top: 110px; }
 /* ---------- Problem ---------- */
 .hero-showcase { padding: 60px 0 0; }
 .hero-showcase .section-inner { max-width: 1360px; }
-.hero-showcase .placeholder-frame { aspect-ratio: 16/9; }
+.hero-showcase .placeholder-frame {
+  aspect-ratio: 16/9;
+  border: 1.5px solid rgba(255, 208, 0, 0.55);
+  box-shadow:
+    0 0 0 1px rgba(255, 208, 0, 0.12),
+    0 0 26px 4px rgba(255, 208, 0, 0.4),
+    0 0 64px 14px rgba(255, 208, 0, 0.22),
+    0 0 120px 32px rgba(255, 208, 0, 0.1);
+}
 .problem { padding: 100px 0 80px; }
 .problem-grid {
   display: grid;
