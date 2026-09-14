@@ -545,15 +545,13 @@ section[id], #top { scroll-margin-top: 110px; }
 .hero-title .amber-word { display: inline-flex; flex-wrap: wrap; justify-content: flex-start; align-items: center; gap: 0.28em; }
 .w-letter-word { display: inline-flex; align-items: center; }
 .hero-title .w-letter {
-  height: 0.7em;
-  width: auto;
+  display: inline-block;
+  height: 0.85em;
+  width: 0.78em;
   margin-right: -0.04em;
-  filter:
-    drop-shadow(0.6px 0 0 var(--amber))
-    drop-shadow(-0.6px 0 0 var(--amber))
-    drop-shadow(0 0.6px 0 var(--amber))
-    drop-shadow(0 -0.6px 0 var(--amber))
-    hue-rotate(-25deg);
+  background-color: var(--amber);
+  -webkit-mask: url("assets/arrow-icon.png") center / contain no-repeat;
+  mask: url("assets/arrow-icon.png") center / contain no-repeat;
 }
 .hero-actions {
   width: 100vw;
