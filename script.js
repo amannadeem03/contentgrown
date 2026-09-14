@@ -6,6 +6,43 @@ document.querySelectorAll(".hero-loop").forEach((v) => {
   });
 });
 
+/* ---------- Center the hero rule above “Fast turnaround” ---------- */
+(function () {
+  const rule = document.querySelector(".eyebrow-rule");
+  const focus = document.querySelector(".eyebrow-focus");
+  const content = document.querySelector(".hero-content");
+  if (!rule || !focus || !content) return;
+
+  function alignRule() {
+    rule.style.marginLeft = "0px";
+    const focusRect = focus.getBoundingClientRect();
+    const ruleRect = rule.getBoundingClientRect();
+    const offset = focusRect.left + focusRect.width / 2 - ruleRect.width / 2 - ruleRect.left;
+    rule.style.marginLeft = `${Math.max(0, offset)}px`;
+  }
+
+  window.addEventListener("resize", alignRule);
+  window.addEventListener("load", alignRule);
+  if (document.fonts?.ready) document.fonts.ready.then(alignRule);
+  alignRule();
+})();
+
+/* ---------- Keep hero call-to-action centered with the header ---------- */
+(function () {
+  const actions = document.querySelector(".hero-actions");
+  if (!actions) return;
+
+  function centerActions() {
+    actions.style.transform = "translateX(0)";
+    const rect = actions.getBoundingClientRect();
+    actions.style.transform = `translateX(${window.innerWidth / 2 - (rect.left + rect.width / 2)}px)`;
+  }
+
+  window.addEventListener("resize", centerActions);
+  window.addEventListener("load", centerActions);
+  centerActions();
+})();
+
 /* ---------- Shared: autoplay preview videos as they scroll into view ---------- */
 const scrollAutoplayObserver = new IntersectionObserver((entries) => {
   entries.forEach((entry) => {
@@ -280,90 +317,76 @@ const statObserver = new IntersectionObserver((entries) => {
 }, { threshold: 0.4 });
 statEls.forEach(el => statObserver.observe(el));
 
-/* ---------- Stat card connector lines + scroll gate ---------- */
+/* ---------- Scroll-driven stat timeline ---------- */
 (function () {
-  const grid = document.getElementById("stats-grid");
+  const section = document.querySelector(".stats-bar");
+  const timeline = document.getElementById("stats-grid");
   const svg = document.getElementById("stat-connectors");
-  if (!grid || !svg) return;
+  if (!section || !timeline || !svg) return;
 
-  const cards = Array.from(grid.querySelectorAll(".stat-card"));
+  const stages = Array.from(timeline.querySelectorAll(".stat-stage"));
   const lines = Array.from(svg.querySelectorAll(".stat-connector-line"));
-  let played = false;
-  let locked = false;
+  const track = svg.querySelector(".stat-connector-track");
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let framePending = false;
 
-  function isSingleRow() {
-    return window.innerWidth > 900 && cards.length > 1 &&
-      Math.abs(cards[0].getBoundingClientRect().top - cards[1].getBoundingClientRect().top) < 2;
-  }
+  const desktopTimeline = () => window.innerWidth > 900;
+  const clamp = value => Math.max(0, Math.min(1, value));
 
   function layoutLines() {
-    const gridRect = grid.getBoundingClientRect();
-    svg.setAttribute("viewBox", `0 0 ${gridRect.width} ${gridRect.height}`);
-    lines.forEach((path, i) => {
-      const a = cards[i];
-      const b = cards[i + 1];
-      if (!a || !b) return;
-      const ra = a.getBoundingClientRect();
-      const rb = b.getBoundingClientRect();
-      const y = ra.top + ra.height / 2 - gridRect.top;
-      const x1 = ra.right - gridRect.left;
-      const x2 = rb.left - gridRect.left;
-      const midX = (x1 + x2) / 2;
-      path.setAttribute("d", `M ${x1} ${y} C ${midX} ${y} ${midX} ${y} ${x2} ${y}`);
-      const len = path.getTotalLength();
-      path.style.strokeDasharray = String(len);
-      path.style.strokeDashoffset = String(len);
-      path.style.transition = "none";
+    if (!desktopTimeline()) return;
+    const rect = timeline.getBoundingClientRect();
+    svg.setAttribute("viewBox", `0 0 ${rect.width} ${rect.height}`);
+    const trackParts = [];
+    lines.forEach((line, index) => {
+      const from = stages[index]?.querySelector(".stat-node")?.getBoundingClientRect();
+      const to = stages[index + 1]?.querySelector(".stat-node")?.getBoundingClientRect();
+      if (!from || !to) return;
+      const y = from.top + from.height / 2 - rect.top;
+      const startX = from.right - rect.left;
+      const endX = to.left - rect.left;
+      const midX = (startX + endX) / 2;
+      const path = `M ${startX} ${y} C ${midX} ${y} ${midX} ${y} ${endX} ${y}`;
+      line.setAttribute("d", path);
+      trackParts.push(path);
+      const length = line.getTotalLength();
+      line.dataset.length = String(length);
+      line.style.strokeDasharray = String(length);
+    });
+    if (track) track.setAttribute("d", trackParts.join(" "));
+  }
+
+  function setProgress(progress) {
+    const stageStarts = [0, 0.16, 0.42, 0.68];
+    stages.forEach((stage, index) => stage.classList.toggle("is-active", progress >= stageStarts[index]));
+    lines.forEach((line, index) => {
+      const start = [0.16, 0.42, 0.68][index];
+      const segmentProgress = clamp((progress - start) / 0.15);
+      line.style.strokeDashoffset = String(Number(line.dataset.length || 0) * (1 - segmentProgress));
     });
   }
 
-  function preventScroll(e) { e.preventDefault(); }
-  const scrollKeys = ["ArrowDown", "ArrowUp", "PageDown", "PageUp", " ", "Spacebar"];
-  function preventKeyScroll(e) { if (scrollKeys.includes(e.key)) e.preventDefault(); }
-
-  function lockScroll() {
-    locked = true;
-    document.body.classList.add("scroll-locked");
-    window.addEventListener("wheel", preventScroll, { passive: false });
-    window.addEventListener("touchmove", preventScroll, { passive: false });
-    window.addEventListener("keydown", preventKeyScroll);
+  function update() {
+    framePending = false;
+    if (reducedMotion || !desktopTimeline()) {
+      stages.forEach(stage => stage.classList.add("is-active"));
+      lines.forEach(line => { line.style.strokeDashoffset = "0"; });
+      return;
+    }
+    const distance = Math.max(1, section.offsetHeight - window.innerHeight);
+    setProgress(clamp((window.scrollY - section.offsetTop) / distance));
   }
 
-  function unlockScroll() {
-    if (!locked) return;
-    locked = false;
-    document.body.classList.remove("scroll-locked");
-    window.removeEventListener("wheel", preventScroll, { passive: false });
-    window.removeEventListener("touchmove", preventScroll, { passive: false });
-    window.removeEventListener("keydown", preventKeyScroll);
+  function requestUpdate() {
+    if (!framePending) { framePending = true; requestAnimationFrame(update); }
   }
+  function refresh() { layoutLines(); update(); }
 
-  function playSequence() {
-    if (played || !isSingleRow()) return;
-    played = true;
-    layoutLines();
-    requestAnimationFrame(() => {
-      lockScroll();
-      lines.forEach((path, i) => {
-        setTimeout(() => {
-          path.style.transition = "stroke-dashoffset 0.55s ease";
-          path.style.strokeDashoffset = "0";
-        }, i * 400);
-      });
-      const totalTime = lines.length * 400 + 650;
-      setTimeout(unlockScroll, totalTime);
-      setTimeout(unlockScroll, totalTime + 4000);
-    });
-  }
-
-  const gateObserver = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting && entry.intersectionRatio > 0.7) playSequence();
-    });
-  }, { threshold: [0.7] });
-  gateObserver.observe(grid);
-
-  window.addEventListener("resize", () => { if (played) layoutLines(); });
+  window.addEventListener("scroll", requestUpdate, { passive: true });
+  window.addEventListener("resize", refresh);
+  window.addEventListener("load", refresh);
+  if (document.fonts?.ready) document.fonts.ready.then(refresh);
+  refresh();
 })();
 
 /* ---------- Scroll reveal ---------- */
