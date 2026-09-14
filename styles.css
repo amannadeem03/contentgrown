@@ -369,7 +369,7 @@ section[id], #top { scroll-margin-top: 110px; }
   background: conic-gradient(
     from var(--beam-angle),
     var(--amber) 0deg,
-    var(--amber-light) 85deg,
+    var(--amber) 85deg,
     var(--amber) 165deg,
     rgba(248, 98, 21, 0.4) 215deg,
     rgba(248, 98, 21, 0.1) 250deg,
