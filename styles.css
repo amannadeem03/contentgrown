@@ -552,6 +552,11 @@ section[id], #top { scroll-margin-top: 110px; }
   background-color: var(--amber);
   -webkit-mask: url("assets/arrow-icon.png") center / contain no-repeat;
   mask: url("assets/arrow-icon.png") center / contain no-repeat;
+  filter:
+    drop-shadow(0.7px 0 0 var(--amber))
+    drop-shadow(-0.7px 0 0 var(--amber))
+    drop-shadow(0 0.7px 0 var(--amber))
+    drop-shadow(0 -0.7px 0 var(--amber));
 }
 .hero-actions {
   width: 100vw;
