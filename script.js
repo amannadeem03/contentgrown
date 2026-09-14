@@ -11,7 +11,7 @@ document.querySelectorAll(".hero-loop").forEach((v) => {
   const a = document.getElementById("bg-fixed-video-a");
   const b = document.getElementById("bg-fixed-video-b");
   if (!a || !b) return;
-  const speed = 0.5;
+  const speed = 1;
 
   function whenReady(video) {
     return new Promise((resolve) => {
