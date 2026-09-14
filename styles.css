@@ -10,6 +10,7 @@
   --muted-2: #635f59;
   --amber: #ffd000;
   --amber-light: #ffe366;
+  --hero-green: #2ecc93;
   --amber-dim: rgba(255, 208, 0, 0.09);
   --border-accent: #ffd00022;
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
@@ -498,8 +499,8 @@ section[id], #top { scroll-margin-top: 110px; }
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(60% 55% at 50% 38%, rgba(14, 38, 33, 0.35) 0%, rgba(14, 38, 33, 0.78) 100%),
-    linear-gradient(180deg, rgba(14, 38, 33, 0.82) 0%, rgba(14, 38, 33, 0.58) 30%, rgba(14, 38, 33, 0.88) 100%);
+    radial-gradient(60% 55% at 50% 38%, rgba(8, 8, 9, 0.35) 0%, rgba(8, 8, 9, 0.78) 100%),
+    linear-gradient(180deg, rgba(8, 8, 9, 0.82) 0%, rgba(8, 8, 9, 0.58) 30%, rgba(8, 8, 9, 0.88) 100%);
   z-index: 0;
   pointer-events: none;
 }
@@ -534,7 +535,7 @@ section[id], #top { scroll-margin-top: 110px; }
   margin-bottom: 36px;
   text-transform: uppercase;
 }
-.hero-title .amber-word { display: inline-flex; flex-wrap: wrap; justify-content: flex-start; align-items: center; gap: 0.28em; }
+.hero-title .amber-word { color: var(--hero-green); display: inline-flex; flex-wrap: wrap; justify-content: flex-start; align-items: center; gap: 0.28em; }
 .w-letter-word { display: inline-flex; align-items: center; }
 .hero-title .w-letter {
   height: 0.7em;
@@ -544,7 +545,8 @@ section[id], #top { scroll-margin-top: 110px; }
     drop-shadow(0.6px 0 0 var(--amber))
     drop-shadow(-0.6px 0 0 var(--amber))
     drop-shadow(0 0.6px 0 var(--amber))
-    drop-shadow(0 -0.6px 0 var(--amber));
+    drop-shadow(0 -0.6px 0 var(--amber))
+    hue-rotate(105deg);
 }
 .hero-actions {
   width: 100vw;
