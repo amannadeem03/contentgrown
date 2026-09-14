@@ -6,37 +6,41 @@ document.querySelectorAll(".hero-loop").forEach((v) => {
   });
 });
 
-/* ---------- Site background video: slow, seamless ping-pong loop ---------- */
+/* ---------- Site background video: crossfaded loop, always smooth ---------- */
 (function () {
-  const video = document.getElementById("bg-fixed-video");
-  if (!video) return;
-  const speed = 0.35;
-  let startTime = null;
-  let rafId = null;
+  const a = document.getElementById("bg-fixed-video-a");
+  const b = document.getElementById("bg-fixed-video-b");
+  if (!a || !b) return;
+  const speed = 0.5;
 
-  function tick(now) {
-    if (startTime === null) startTime = now;
-    if (video.duration) {
-      const elapsed = ((now - startTime) / 1000) * speed;
-      const cycle = video.duration * 2;
-      const t = elapsed % cycle;
-      video.currentTime = t <= video.duration ? t : cycle - t;
-    }
-    rafId = requestAnimationFrame(tick);
+  function whenReady(video) {
+    return new Promise((resolve) => {
+      if (video.readyState >= 1 && video.duration) resolve();
+      else video.addEventListener("loadedmetadata", () => resolve(), { once: true });
+    });
   }
 
-  function start() {
-    video.pause();
-    if (rafId) cancelAnimationFrame(rafId);
-    startTime = null;
-    rafId = requestAnimationFrame(tick);
+  function crossfade(video) {
+    const dur = video.duration;
+    if (!dur) return 1;
+    const phase = (video.currentTime / dur) * 2 * Math.PI;
+    return (1 - Math.cos(phase)) / 2;
   }
 
-  if (video.readyState >= 1) {
-    start();
-  } else {
-    video.addEventListener("loadedmetadata", start, { once: true });
+  function tick() {
+    a.style.opacity = crossfade(a);
+    b.style.opacity = crossfade(b);
+    requestAnimationFrame(tick);
   }
+
+  Promise.all([whenReady(a), whenReady(b)]).then(() => {
+    a.playbackRate = speed;
+    b.playbackRate = speed;
+    try { b.currentTime = a.duration / 2; } catch (e) {}
+    a.play().catch(() => {});
+    b.play().catch(() => {});
+    requestAnimationFrame(tick);
+  });
 })();
 
 /* ---------- Center the hero rule above “Fast turnaround” ---------- */
