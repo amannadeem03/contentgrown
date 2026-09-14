@@ -362,11 +362,17 @@ section[id], #top { scroll-margin-top: 110px; }
   .btn-glass::before { opacity: 0.3; }
 }
 
-/* Header CTA: continuous cinematic light beam traveling the border */
-@property --beam-angle {
-  syntax: "<angle>";
-  inherits: false;
-  initial-value: 0deg;
+/* Header CTA: cinematic light sweeping around the border ring.
+   The ring shape is a static mask-composite cutout (well-supported
+   everywhere); only the gradient's background-position animates, so
+   there's no dependency on animating a registered @property custom
+   property, which Safari/iOS frequently fails to repaint. */
+.nav-cta.btn-glass .btn-label,
+.hero-cta.btn-glass .btn-label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 .nav-cta.btn-glass::before,
 .hero-cta.btn-glass::before { content: none; }
@@ -377,30 +383,30 @@ section[id], #top { scroll-margin-top: 110px; }
   inset: 0;
   border-radius: inherit;
   padding: 1.5px;
-  background: conic-gradient(
-    from var(--beam-angle),
-    var(--amber) 0deg,
-    var(--amber) 85deg,
-    var(--amber) 165deg,
-    rgba(248, 98, 21, 0.4) 215deg,
-    rgba(248, 98, 21, 0.1) 250deg,
-    transparent 278deg,
-    transparent 312deg,
-    rgba(248, 98, 21, 0.22) 345deg,
-    var(--amber) 360deg
+  background: linear-gradient(
+    100deg,
+    var(--amber) 0%,
+    rgba(255, 171, 102, 0.95) 10%,
+    var(--amber) 20%,
+    rgba(248, 98, 21, 0.35) 40%,
+    rgba(248, 98, 21, 0.35) 60%,
+    var(--amber) 80%,
+    rgba(255, 171, 102, 0.95) 90%,
+    var(--amber) 100%
   );
+  background-size: 260% 100%;
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
-  opacity: 0.85;
+  opacity: 0.9;
   pointer-events: none;
-  animation: beam-spin 5.5s linear infinite;
   transition: opacity 0.4s var(--ease-soft);
+  animation: beam-sweep 4.5s linear infinite;
 }
 .nav-cta.btn-glass:hover::after,
 .hero-cta.btn-glass:hover::after { opacity: 1; }
-@keyframes beam-spin {
-  to { --beam-angle: 360deg; }
+@keyframes beam-sweep {
+  to { background-position: -260% 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   .nav-cta.btn-glass::after,
@@ -1066,6 +1072,10 @@ section[id], #top { scroll-margin-top: 110px; }
 
 /* ---------- Responsive ---------- */
 @media (max-width: 900px) {
+  .hero-title {
+    font-size: clamp(2.1rem, 9.5vw, 3.4rem);
+    text-wrap: balance;
+  }
   .stats-bar { height: auto; }
   .stats-inner { position: relative; height: auto; min-height: 0; padding: 64px 24px; }
   .nav, .nav-cta { display: none; }
