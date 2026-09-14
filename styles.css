@@ -702,6 +702,7 @@ section[id], #top { scroll-margin-top: 110px; }
   max-width: 918px;
   margin: 0 auto;
   position: relative;
+  transform: translateY(5vh);
 }
 .hero-showcase-frame::before {
   content: "";
