@@ -155,7 +155,7 @@ section[id], #top { scroll-margin-top: 110px; }
   padding: 8px 40px;
   border-radius: 999px;
   background: rgba(18, 17, 15, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(248, 98, 21, 0.3);
   backdrop-filter: blur(18px) saturate(150%);
   -webkit-backdrop-filter: blur(18px) saturate(150%);
   box-shadow:
@@ -165,7 +165,7 @@ section[id], #top { scroll-margin-top: 110px; }
 }
 .site-header.scrolled .nav {
   background: rgba(14, 13, 11, 0.78);
-  border-color: rgba(248, 98, 21, 0.16);
+  border-color: rgba(248, 98, 21, 0.4);
 }
 
 .logo { display: inline-flex; align-items: center; white-space: nowrap; flex-shrink: 0; margin-left: 8px; position: relative; }
@@ -1072,7 +1072,7 @@ section[id], #top { scroll-margin-top: 110px; }
   .hamburger { display: flex; }
   .header-row {
     background: rgba(18, 17, 15, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.09);
+    border: 1px solid rgba(248, 98, 21, 0.3);
     backdrop-filter: blur(18px) saturate(150%);
     -webkit-backdrop-filter: blur(18px) saturate(150%);
     border-radius: 999px;
@@ -1082,7 +1082,7 @@ section[id], #top { scroll-margin-top: 110px; }
   }
   .site-header.scrolled .header-row {
     background: rgba(14, 13, 11, 0.78);
-    border-color: rgba(248, 98, 21, 0.16);
+    border-color: rgba(248, 98, 21, 0.4);
   }
   .problem-grid, .how-grid { grid-template-columns: 1fr; }
   .stats-timeline { grid-template-columns: repeat(2, 1fr); row-gap: 42px; }
