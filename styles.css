@@ -684,7 +684,8 @@ section[id], #top { scroll-margin-top: 110px; }
 .stat-label { margin-top: 8px; font-size: clamp(0.78rem, 1.2vw, 1rem); color: var(--muted); letter-spacing: 0.01em; }
 
 /* ---------- Problem ---------- */
-.problem { padding: 150px 0 80px; }
+.hero-showcase { padding: 60px 0 0; }
+.problem { padding: 100px 0 80px; }
 .problem-grid {
   display: grid;
   grid-template-columns: 1.1fr 0.9fr;
