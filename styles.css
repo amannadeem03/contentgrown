@@ -685,15 +685,21 @@ section[id], #top { scroll-margin-top: 110px; }
 
 /* ---------- Problem ---------- */
 .hero-showcase { padding: 60px 0 0; }
-.hero-showcase .section-inner { max-width: 1360px; }
+.hero-showcase .section-inner { max-width: 1360px; position: relative; }
+.hero-showcase .section-inner::before {
+  content: "";
+  position: absolute;
+  inset: -30px;
+  border-radius: 20px;
+  background: rgba(255, 208, 0, 0.55);
+  filter: blur(55px);
+  pointer-events: none;
+}
 .hero-showcase .placeholder-frame {
   aspect-ratio: 16/9;
+  position: relative;
   border: 1.5px solid rgba(255, 208, 0, 0.55);
-  box-shadow:
-    0 0 0 1px rgba(255, 208, 0, 0.12),
-    0 0 26px 4px rgba(255, 208, 0, 0.4),
-    0 0 64px 14px rgba(255, 208, 0, 0.22),
-    0 0 120px 32px rgba(255, 208, 0, 0.1);
+  box-shadow: 0 0 22px 2px rgba(255, 208, 0, 0.3);
 }
 .problem { padding: 100px 0 80px; }
 .problem-grid {
