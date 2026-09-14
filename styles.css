@@ -96,13 +96,13 @@ p { line-height: 1.68; }
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
-  background: #2a2410;
+  background: #0a0a09;
 }
 
 .aurora {
   position: absolute;
   inset: 0;
-  background: #2a2410;
+  background: #0a0a09;
 }
 
 /* Static background — no motion */
