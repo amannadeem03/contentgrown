@@ -6,6 +6,39 @@ document.querySelectorAll(".hero-loop").forEach((v) => {
   });
 });
 
+/* ---------- Site background video: slow, seamless ping-pong loop ---------- */
+(function () {
+  const video = document.getElementById("bg-fixed-video");
+  if (!video) return;
+  const speed = 0.35;
+  let startTime = null;
+  let rafId = null;
+
+  function tick(now) {
+    if (startTime === null) startTime = now;
+    if (video.duration) {
+      const elapsed = ((now - startTime) / 1000) * speed;
+      const cycle = video.duration * 2;
+      const t = elapsed % cycle;
+      video.currentTime = t <= video.duration ? t : cycle - t;
+    }
+    rafId = requestAnimationFrame(tick);
+  }
+
+  function start() {
+    video.pause();
+    if (rafId) cancelAnimationFrame(rafId);
+    startTime = null;
+    rafId = requestAnimationFrame(tick);
+  }
+
+  if (video.readyState >= 1) {
+    start();
+  } else {
+    video.addEventListener("loadedmetadata", start, { once: true });
+  }
+})();
+
 /* ---------- Center the hero rule above “Fast turnaround” ---------- */
 (function () {
   const rule = document.querySelector(".eyebrow-rule");
