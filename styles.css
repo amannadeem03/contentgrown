@@ -699,7 +699,7 @@ section[id], #top { scroll-margin-top: 110px; }
 .hero-showcase { padding: 60px 0 0; }
 .hero-showcase .section-inner { max-width: 1360px; }
 .hero-showcase-frame {
-  max-width: 1020px;
+  max-width: 918px;
   margin: 0 auto;
   position: relative;
 }
