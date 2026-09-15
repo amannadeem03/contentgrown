@@ -387,42 +387,66 @@ statEls.forEach(el => statObserver.observe(el));
   const slice = 1 / stages.length;
   const windows = stages.map((_, i) => [i * slice, (i + 1) * slice]);
 
-  let progress = 0;
+  // `target` is where wheel/touch input wants the fill to be (can jump
+  // instantly, e.g. a fast flick). `displayed` is what's actually rendered,
+  // and can only move toward target at a capped rate per second - so a
+  // single hard scroll can't blow through all four circles at once, and a
+  // single jittery tick can't release the lock early either, since release
+  // only fires once `displayed` itself has genuinely reached the boundary.
+  let target = 0;
+  let displayed = 0;
   let locked = false;
   let completed = false;
+  let rafId = null;
+  let lastTime = null;
+  const RATE = 1 / 2.5; // full 0->1 traverse takes at least ~2.5s
 
   function render() {
     stages.forEach((stage, i) => {
       const [start, end] = windows[i];
-      const stageProgress = clamp((progress - start) / (end - start));
-      stage.classList.toggle("is-active", progress > start + 0.01);
+      const stageProgress = clamp((displayed - start) / (end - start));
+      stage.classList.toggle("is-active", displayed > start + 0.01);
       stage.classList.toggle("is-complete", stageProgress >= 0.97);
       nodes[i]?.style.setProperty("--ring-angle", `${stageProgress * 360}deg`);
     });
   }
 
+  function loop(now) {
+    if (lastTime === null) lastTime = now;
+    const maxStep = RATE * ((now - lastTime) / 1000);
+    lastTime = now;
+    if (displayed < target) displayed = Math.min(target, displayed + maxStep);
+    else if (displayed > target) displayed = Math.max(target, displayed - maxStep);
+    render();
+    if (!locked) return;
+    if (displayed >= 1) { completed = true; release(); return; }
+    if (displayed <= 0 && target <= 0) { release(); return; }
+    rafId = requestAnimationFrame(loop);
+  }
+
   function engage() {
     if (locked || completed) return;
     locked = true;
+    lastTime = null;
     document.body.classList.add("scroll-locked");
+    rafId = requestAnimationFrame(loop);
   }
   function release() {
     locked = false;
     document.body.classList.remove("scroll-locked");
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = null;
   }
 
   // Wheel delta magnitude varies wildly by device (trackpad vs. mouse
-  // wheel), so scale it down to a deliberate, readable fill pace rather
-  // than trying to match native scroll speed 1:1.
-  const STEP = 0.0016;
+  // wheel); this only needs to move the *target*, since displayed is what's
+  // actually rate-limited.
+  const DELTA_SCALE = 0.0022;
 
   function onWheel(e) {
     if (!locked) return;
     e.preventDefault();
-    progress = clamp(progress + e.deltaY * STEP);
-    render();
-    if (progress >= 1) { completed = true; release(); }
-    else if (progress <= 0 && e.deltaY < 0) { release(); }
+    target = clamp(target + e.deltaY * DELTA_SCALE);
   }
 
   let touchY = null;
@@ -436,10 +460,7 @@ statEls.forEach(el => statObserver.observe(el));
     const y = e.touches[0].clientY;
     const delta = touchY - y; // finger moving up = scrolling down
     touchY = y;
-    progress = clamp(progress + delta * STEP * 2.2);
-    render();
-    if (progress >= 1) { completed = true; release(); }
-    else if (progress <= 0 && delta < 0) { release(); }
+    target = clamp(target + delta * DELTA_SCALE * 2.2);
   }
 
   window.addEventListener("wheel", onWheel, { passive: false });
