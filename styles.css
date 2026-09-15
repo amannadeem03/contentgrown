@@ -394,7 +394,7 @@ section[id], #top { scroll-margin-top: 110px; }
     rgba(255, 171, 102, 0.95) 90%,
     var(--amber) 100%
   );
-  background-size: 260% 100%;
+  background-size: 200% 100%;
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
@@ -406,7 +406,7 @@ section[id], #top { scroll-margin-top: 110px; }
 .nav-cta.btn-glass:hover::after,
 .hero-cta.btn-glass:hover::after { opacity: 1; }
 @keyframes beam-sweep {
-  to { background-position: -260% 0; }
+  to { background-position: -100% 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   .nav-cta.btn-glass::after,
