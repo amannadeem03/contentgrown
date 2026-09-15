@@ -631,7 +631,7 @@ section[id], #top { scroll-margin-top: 110px; }
   margin: 0 auto;
   padding: 64px 48px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
 }
 .glass-panel {
   position: relative;
@@ -651,7 +651,6 @@ section[id], #top { scroll-margin-top: 110px; }
   gap: clamp(26px, 5vw, 100px);
   align-items: start;
   padding: 16px 0;
-  transform: translateY(-26vh);
 }
 .stat-connectors {
   position: absolute;
