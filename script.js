@@ -363,52 +363,46 @@ const statObserver = new IntersectionObserver((entries) => {
 }, { threshold: 0.4 });
 statEls.forEach(el => statObserver.observe(el));
 
-/* ---------- Stat timeline reveal (scroll-triggered, not scroll-jacked) ---------- */
+/* ---------- Stat ring fill, tied live to scroll position (no scroll-jack) ---------- */
 (function () {
-  const section = document.querySelector(".stats-bar");
   const timeline = document.getElementById("stats-grid");
-  if (!section || !timeline) return;
+  if (!timeline) return;
 
   const stages = Array.from(timeline.querySelectorAll(".stat-stage"));
+  const nodes = stages.map(s => s.querySelector(".stat-node"));
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const clamp = v => Math.max(0, Math.min(1, v));
 
-  function animateRing(node, duration) {
-    const start = performance.now();
-    function tick(now) {
-      const t = Math.min((now - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - t, 3);
-      node.style.setProperty("--ring-angle", `${eased * 360}deg`);
-      if (t < 1) requestAnimationFrame(tick);
-    }
-    requestAnimationFrame(tick);
+  if (reducedMotion) {
+    stages.forEach((stage, i) => {
+      stage.classList.add("is-active", "is-complete");
+      nodes[i]?.style.setProperty("--ring-angle", "360deg");
+    });
+    return;
   }
 
-  function reveal() {
-    stages.forEach((stage, index) => {
-      const node = stage.querySelector(".stat-node");
-      const delay = reducedMotion ? 0 : index * 160;
-      setTimeout(() => {
-        stage.classList.add("is-active");
-        if (!node) return;
-        if (reducedMotion) {
-          node.style.setProperty("--ring-angle", "360deg");
-          stage.classList.add("is-complete");
-        } else {
-          animateRing(node, 1460);
-          setTimeout(() => stage.classList.add("is-complete"), 1460);
-        }
-      }, delay);
+  let framePending = false;
+  function update() {
+    framePending = false;
+    const vh = window.innerHeight;
+    stages.forEach((stage, i) => {
+      const rect = stage.getBoundingClientRect();
+      // 0 as the card's top enters the bottom of the viewport, 1 once it has
+      // scrolled up past its own height beyond the top — i.e. the ring fills
+      // in step with the card's natural scroll passage, no pinning needed.
+      const progress = clamp((vh - rect.top) / (vh + rect.height));
+      stage.classList.toggle("is-active", progress > 0.02);
+      stage.classList.toggle("is-complete", progress >= 0.97);
+      nodes[i]?.style.setProperty("--ring-angle", `${progress * 360}deg`);
     });
   }
+  function requestUpdate() {
+    if (!framePending) { framePending = true; requestAnimationFrame(update); }
+  }
 
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (!entry.isIntersecting) return;
-      reveal();
-      observer.unobserve(section);
-    });
-  }, { threshold: 0.15 });
-  observer.observe(section);
+  window.addEventListener("scroll", requestUpdate, { passive: true });
+  window.addEventListener("resize", requestUpdate);
+  requestUpdate();
 })();
 
 /* ---------- Scroll reveal ---------- */
