@@ -762,13 +762,12 @@ section[id], #top { scroll-margin-top: 110px; }
   position: relative;
   border: 2px solid rgba(248, 98, 21, 0.85);
 }
-.problem { margin-top: 10vh; padding: 42px 0 80px; }
+.problem { margin-top: 10vh; padding: 42px 0 30px; }
 .problem-grid {
   display: grid;
   grid-template-columns: 1.1fr 0.9fr;
   gap: 64px;
   align-items: start;
-  margin-bottom: 64px;
 }
 .problem-copy p { color: var(--muted); margin-bottom: 20px; font-size: 1.03rem; line-height: 1.7; }
 .problem-emphasis { color: var(--chalk) !important; font-weight: 600; font-size: 1.1rem !important; }
