@@ -394,8 +394,9 @@ statEls.forEach(el => statObserver.observe(el));
     const rect = timeline.getBoundingClientRect();
     // 0 as the grid's top enters the bottom of the viewport, 1 once it has
     // scrolled up past its own height beyond the top - one shared progress
-    // value for the whole row, no pinning needed.
-    const progress = clamp((vh - rect.top) / (vh + rect.height));
+    // value for the whole row, no pinning needed. The *2 halves the fill
+    // speed relative to scroll distance (more scrolling per degree filled).
+    const progress = clamp((vh - rect.top) / ((vh + rect.height) * 2));
     stages.forEach((stage, i) => {
       const [start, end] = windows[i];
       const stageProgress = clamp((progress - start) / (end - start));
