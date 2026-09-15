@@ -363,10 +363,11 @@ const statObserver = new IntersectionObserver((entries) => {
 }, { threshold: 0.4 });
 statEls.forEach(el => statObserver.observe(el));
 
-/* ---------- Stat ring fill, tied live to scroll position (no scroll-jack) ---------- */
+/* ---------- Stat ring fill, holds scroll until all four finish ---------- */
 (function () {
+  const section = document.querySelector(".stats-bar");
   const timeline = document.getElementById("stats-grid");
-  if (!timeline) return;
+  if (!section || !timeline) return;
 
   const stages = Array.from(timeline.querySelectorAll(".stat-stage"));
   const nodes = stages.map(s => s.querySelector(".stat-node"));
@@ -381,22 +382,16 @@ statEls.forEach(el => statObserver.observe(el));
     return;
   }
 
-  // Each stage gets an equal, back-to-back slice of the shared progress, so
-  // stage 1 fills 0->360 first, then stage 2, then stage 3, etc. - not all
-  // four filling at once.
+  // Each stage gets an equal, back-to-back slice of progress, so stage 1
+  // fills 0->360 first, then stage 2, then stage 3, etc.
   const slice = 1 / stages.length;
   const windows = stages.map((_, i) => [i * slice, (i + 1) * slice]);
 
-  let framePending = false;
-  function update() {
-    framePending = false;
-    const vh = window.innerHeight;
-    const rect = timeline.getBoundingClientRect();
-    // 0 as the grid's top enters the bottom of the viewport, 1 once it has
-    // scrolled up past its own height beyond the top - one shared progress
-    // value for the whole row, no pinning needed. The *2 halves the fill
-    // speed relative to scroll distance (more scrolling per degree filled).
-    const progress = clamp((vh - rect.top) / ((vh + rect.height) * 2));
+  let progress = 0;
+  let locked = false;
+  let completed = false;
+
+  function render() {
     stages.forEach((stage, i) => {
       const [start, end] = windows[i];
       const stageProgress = clamp((progress - start) / (end - start));
@@ -405,13 +400,58 @@ statEls.forEach(el => statObserver.observe(el));
       nodes[i]?.style.setProperty("--ring-angle", `${stageProgress * 360}deg`);
     });
   }
-  function requestUpdate() {
-    if (!framePending) { framePending = true; requestAnimationFrame(update); }
+
+  function engage() {
+    if (locked || completed) return;
+    locked = true;
+    document.body.classList.add("scroll-locked");
+  }
+  function release() {
+    locked = false;
+    document.body.classList.remove("scroll-locked");
   }
 
-  window.addEventListener("scroll", requestUpdate, { passive: true });
-  window.addEventListener("resize", requestUpdate);
-  requestUpdate();
+  // Wheel delta magnitude varies wildly by device (trackpad vs. mouse
+  // wheel), so scale it down to a deliberate, readable fill pace rather
+  // than trying to match native scroll speed 1:1.
+  const STEP = 0.0016;
+
+  function onWheel(e) {
+    if (!locked) return;
+    e.preventDefault();
+    progress = clamp(progress + e.deltaY * STEP);
+    render();
+    if (progress >= 1) { completed = true; release(); }
+    else if (progress <= 0 && e.deltaY < 0) { release(); }
+  }
+
+  let touchY = null;
+  function onTouchStart(e) {
+    if (!locked) return;
+    touchY = e.touches[0].clientY;
+  }
+  function onTouchMove(e) {
+    if (!locked || touchY === null) return;
+    e.preventDefault();
+    const y = e.touches[0].clientY;
+    const delta = touchY - y; // finger moving up = scrolling down
+    touchY = y;
+    progress = clamp(progress + delta * STEP * 2.2);
+    render();
+    if (progress >= 1) { completed = true; release(); }
+    else if (progress <= 0 && delta < 0) { release(); }
+  }
+
+  window.addEventListener("wheel", onWheel, { passive: false });
+  window.addEventListener("touchstart", onTouchStart, { passive: true });
+  window.addEventListener("touchmove", onTouchMove, { passive: false });
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting && entry.intersectionRatio > 0.6) engage();
+    });
+  }, { threshold: [0.6] });
+  observer.observe(section);
 })();
 
 /* ---------- Scroll reveal ---------- */
