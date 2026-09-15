@@ -385,8 +385,8 @@ statEls.forEach(el => statObserver.observe(el));
           node.style.setProperty("--ring-angle", "360deg");
           stage.classList.add("is-complete");
         } else {
-          animateRing(node, 650);
-          setTimeout(() => stage.classList.add("is-complete"), 650);
+          animateRing(node, 975);
+          setTimeout(() => stage.classList.add("is-complete"), 975);
         }
       }, delay);
     });
