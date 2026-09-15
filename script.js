@@ -381,19 +381,27 @@ statEls.forEach(el => statObserver.observe(el));
     return;
   }
 
+  // Each stage gets an equal, back-to-back slice of the shared progress, so
+  // stage 1 fills 0->360 first, then stage 2, then stage 3, etc. - not all
+  // four filling at once.
+  const slice = 1 / stages.length;
+  const windows = stages.map((_, i) => [i * slice, (i + 1) * slice]);
+
   let framePending = false;
   function update() {
     framePending = false;
     const vh = window.innerHeight;
+    const rect = timeline.getBoundingClientRect();
+    // 0 as the grid's top enters the bottom of the viewport, 1 once it has
+    // scrolled up past its own height beyond the top - one shared progress
+    // value for the whole row, no pinning needed.
+    const progress = clamp((vh - rect.top) / (vh + rect.height));
     stages.forEach((stage, i) => {
-      const rect = stage.getBoundingClientRect();
-      // 0 as the card's top enters the bottom of the viewport, 1 once it has
-      // scrolled up past its own height beyond the top — i.e. the ring fills
-      // in step with the card's natural scroll passage, no pinning needed.
-      const progress = clamp((vh - rect.top) / (vh + rect.height));
-      stage.classList.toggle("is-active", progress > 0.02);
-      stage.classList.toggle("is-complete", progress >= 0.97);
-      nodes[i]?.style.setProperty("--ring-angle", `${progress * 360}deg`);
+      const [start, end] = windows[i];
+      const stageProgress = clamp((progress - start) / (end - start));
+      stage.classList.toggle("is-active", progress > start + 0.01);
+      stage.classList.toggle("is-complete", stageProgress >= 0.97);
+      nodes[i]?.style.setProperty("--ring-angle", `${stageProgress * 360}deg`);
     });
   }
   function requestUpdate() {
