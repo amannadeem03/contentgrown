@@ -354,89 +354,52 @@ const statObserver = new IntersectionObserver((entries) => {
 }, { threshold: 0.4 });
 statEls.forEach(el => statObserver.observe(el));
 
-/* ---------- Scroll-driven stat timeline ---------- */
+/* ---------- Stat timeline reveal (scroll-triggered, not scroll-jacked) ---------- */
 (function () {
   const section = document.querySelector(".stats-bar");
   const timeline = document.getElementById("stats-grid");
-  const svg = document.getElementById("stat-connectors");
-  if (!section || !timeline || !svg) return;
+  if (!section || !timeline) return;
 
   const stages = Array.from(timeline.querySelectorAll(".stat-stage"));
-  const lines = Array.from(svg.querySelectorAll(".stat-connector-line"));
-  const track = svg.querySelector(".stat-connector-track");
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  let framePending = false;
 
-  const desktopTimeline = () => window.innerWidth > 900;
-  const clamp = value => Math.max(0, Math.min(1, value));
-
-  function layoutLines() {
-    if (!desktopTimeline()) return;
-    const rect = timeline.getBoundingClientRect();
-    svg.setAttribute("viewBox", `0 0 ${rect.width} ${rect.height}`);
-    const trackParts = [];
-    lines.forEach((line, index) => {
-      const from = stages[index]?.querySelector(".stat-node")?.getBoundingClientRect();
-      const to = stages[index + 1]?.querySelector(".stat-node")?.getBoundingClientRect();
-      if (!from || !to) return;
-      const y = from.top + from.height / 2 - rect.top;
-      const startX = from.right - rect.left;
-      const endX = to.left - rect.left;
-      const midX = (startX + endX) / 2;
-      const path = `M ${startX} ${y} C ${midX} ${y} ${midX} ${y} ${endX} ${y}`;
-      line.setAttribute("d", path);
-      trackParts.push(path);
-      const length = line.getTotalLength();
-      line.dataset.length = String(length);
-      line.style.strokeDasharray = String(length);
-    });
-    if (track) track.setAttribute("d", trackParts.join(" "));
-  }
-
-  function setProgress(progress) {
-    // Each item first appears as an empty circle. Its ring then draws during
-    // the next scroll interval, before the following item is revealed.
-    const revealStarts = [0, 0.25, 0.5, 0.75];
-    const fillStarts = [0.08, 0.33, 0.58, 0.83];
-    const ringDuration = 0.16;
-    stages.forEach((stage, index) => {
-      const ringProgress = clamp((progress - fillStarts[index]) / ringDuration);
-      const node = stage.querySelector(".stat-node");
-      stage.classList.toggle("is-active", progress >= revealStarts[index]);
-      stage.classList.toggle("is-complete", ringProgress >= 0.98);
-      node?.style.setProperty("--ring-angle", `${ringProgress * 360}deg`);
-    });
-    lines.forEach((line, index) => {
-      const start = [0.14, 0.39, 0.64][index];
-      const segmentProgress = clamp((progress - start) / 0.11);
-      line.style.strokeDashoffset = String(Number(line.dataset.length || 0) * (1 - segmentProgress));
-    });
-  }
-
-  function update() {
-    framePending = false;
-    if (reducedMotion || !desktopTimeline()) {
-      stages.forEach(stage => {
-        stage.classList.add("is-active", "is-complete");
-        stage.querySelector(".stat-node")?.style.setProperty("--ring-angle", "360deg");
-      });
-      lines.forEach(line => { line.style.strokeDashoffset = "0"; });
-      return;
+  function animateRing(node, duration) {
+    const start = performance.now();
+    function tick(now) {
+      const t = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+      node.style.setProperty("--ring-angle", `${eased * 360}deg`);
+      if (t < 1) requestAnimationFrame(tick);
     }
-    const distance = Math.max(1, section.offsetHeight - window.innerHeight);
-    setProgress(clamp((window.scrollY - section.offsetTop) / distance));
+    requestAnimationFrame(tick);
   }
 
-  function requestUpdate() {
-    if (!framePending) { framePending = true; requestAnimationFrame(update); }
+  function reveal() {
+    stages.forEach((stage, index) => {
+      const node = stage.querySelector(".stat-node");
+      const delay = reducedMotion ? 0 : index * 160;
+      setTimeout(() => {
+        stage.classList.add("is-active");
+        if (!node) return;
+        if (reducedMotion) {
+          node.style.setProperty("--ring-angle", "360deg");
+          stage.classList.add("is-complete");
+        } else {
+          animateRing(node, 650);
+          setTimeout(() => stage.classList.add("is-complete"), 650);
+        }
+      }, delay);
+    });
   }
-  function refresh() { layoutLines(); update(); }
 
-  window.addEventListener("scroll", requestUpdate, { passive: true });
-  window.addEventListener("resize", refresh);
-  window.addEventListener("load", refresh);
-  if (document.fonts?.ready) document.fonts.ready.then(refresh);
-  refresh();
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      reveal();
+      observer.unobserve(section);
+    });
+  }, { threshold: 0.3 });
+  observer.observe(section);
 })();
 
 /* ---------- Scroll reveal ---------- */
