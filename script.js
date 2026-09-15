@@ -137,7 +137,12 @@ workItems.forEach((item) => {
     <span class="work-card-tag">${item.label}</span>
   `;
   const video = card.querySelector("video");
-  registerAutoplayVideo(video);
+  // Preview plays only on hover, not on scroll-into-view — with 21 cards in
+  // this grid, autoplaying every card that scrolls 50% into view meant
+  // several 1080p videos could be decoding at once, which is what caused
+  // the stutter/lag.
+  card.addEventListener("mouseenter", () => { video.currentTime = 0; video.play().catch(() => {}); });
+  card.addEventListener("mouseleave", () => { video.pause(); video.currentTime = 0; });
   card.addEventListener("click", () => openLightbox(src));
   workGrid.appendChild(card);
 });
