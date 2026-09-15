@@ -398,7 +398,7 @@ statEls.forEach(el => statObserver.observe(el));
       reveal();
       observer.unobserve(section);
     });
-  }, { threshold: 0.3 });
+  }, { threshold: 0.15 });
   observer.observe(section);
 })();
 
