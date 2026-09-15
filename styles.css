@@ -362,11 +362,12 @@ section[id], #top { scroll-margin-top: 110px; }
   .btn-glass::before { opacity: 0.3; }
 }
 
-/* Header CTA: cinematic light sweeping around the border ring.
-   The ring shape is a static mask-composite cutout (well-supported
-   everywhere); only the gradient's background-position animates, so
-   there's no dependency on animating a registered @property custom
-   property, which Safari/iOS frequently fails to repaint. */
+/* CTA: a bright segment continuously revolves around the border ring. */
+@property --beam-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
 .nav-cta.btn-glass .btn-label,
 .hero-cta.btn-glass .btn-label {
   position: relative;
@@ -374,43 +375,37 @@ section[id], #top { scroll-margin-top: 110px; }
   align-items: center;
   gap: 8px;
 }
-.nav-cta.btn-glass::before,
-.hero-cta.btn-glass::before { content: none; }
-.nav-cta.btn-glass::after,
-.hero-cta.btn-glass::after {
+.btn-glass.btn-solid::before { content: none; }
+.btn-glass.btn-solid::after {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
   padding: 1.5px;
-  background: linear-gradient(
-    100deg,
-    var(--amber) 0%,
-    rgba(255, 171, 102, 0.95) 10%,
-    var(--amber) 20%,
-    rgba(248, 98, 21, 0.35) 40%,
-    rgba(248, 98, 21, 0.35) 60%,
-    var(--amber) 80%,
-    rgba(255, 171, 102, 0.95) 90%,
-    var(--amber) 100%
+  background: conic-gradient(
+    from var(--beam-angle),
+    transparent 0deg 220deg,
+    rgba(248, 98, 21, 0.12) 240deg,
+    rgba(248, 98, 21, 0.5) 260deg,
+    var(--amber) 285deg,
+    var(--amber) 345deg,
+    rgba(248, 98, 21, 0.5) 360deg
   );
-  background-size: 200% 100%;
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
-  opacity: 0.9;
+  opacity: 1;
+  filter: drop-shadow(0 0 3px rgba(248, 98, 21, 0.38));
   pointer-events: none;
   transition: opacity 0.4s var(--ease-soft);
-  animation: beam-sweep 4.5s linear infinite;
+  animation: beam-spin 5.2s linear infinite;
 }
-.nav-cta.btn-glass:hover::after,
-.hero-cta.btn-glass:hover::after { opacity: 1; }
-@keyframes beam-sweep {
-  to { background-position: -100% 0; }
+.btn-glass.btn-solid:hover::after { opacity: 1; }
+@keyframes beam-spin {
+  to { --beam-angle: 360deg; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .nav-cta.btn-glass::after,
-  .hero-cta.btn-glass::after { animation: none; }
+  .btn-glass.btn-solid::after { animation: none; }
 }
 
 .hamburger {
@@ -620,6 +615,11 @@ section[id], #top { scroll-margin-top: 110px; }
 @keyframes scrollpulse { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.85; } }
 
 /* ---------- Stats ---------- */
+@property --node-progress {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 0%;
+}
 .stats-bar { position: relative; height: 420vh; padding: 0; }
 .hr-fade { height: 1px; background: linear-gradient(90deg, transparent, var(--line), transparent); }
 .stats-inner {
@@ -669,7 +669,7 @@ section[id], #top { scroll-margin-top: 110px; }
 }
 .stat-connector-line {
   fill: none;
-  stroke: #f86215;
+  stroke: var(--amber);
   stroke-width: 2;
   stroke-linecap: round;
   filter: drop-shadow(0 0 4px rgba(248, 98, 21, 0.5));
@@ -687,26 +687,42 @@ section[id], #top { scroll-margin-top: 110px; }
 }
 .stat-stage.is-active { opacity: 1; transform: translateY(0) scale(1); }
 .stat-node {
+  --node-progress: 0%;
   width: clamp(118px, 11.5vw, 172px);
   aspect-ratio: 1;
   border-radius: 50%;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #f86215;
+  color: var(--amber);
   background: radial-gradient(circle at 35% 28%, rgba(255, 150, 80, 0.14), rgba(248, 98, 21, 0.045) 45%, rgba(0, 0, 0, 0.28) 100%);
-  border: 1px solid rgba(248, 98, 21, 0.26);
+  border: 1px solid rgba(248, 98, 21, 0.16);
   box-shadow: inset 0 1px 0 rgba(255, 214, 179, 0.13), 0 10px 24px -20px rgba(248, 98, 21, 0.34);
   transition: box-shadow 0.4s var(--ease-soft), background 0.4s var(--ease-soft), transform 0.4s var(--ease-soft);
 }
+.stat-node::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  padding: 2px;
+  border-radius: inherit;
+  background: conic-gradient(from -90deg, var(--amber) 0 var(--node-progress), rgba(248, 98, 21, 0.18) var(--node-progress) 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  filter: drop-shadow(0 0 4px rgba(248, 98, 21, 0.28));
+  pointer-events: none;
+}
 .stat-stage.is-active .stat-node { background: radial-gradient(circle at 35% 28%, rgba(255, 178, 110, 0.2), rgba(248, 98, 21, 0.065) 45%, rgba(0, 0, 0, 0.28) 100%); box-shadow: inset 0 1px 0 rgba(255, 230, 204, 0.2), 0 0 16px rgba(248, 98, 21, 0.11), 0 10px 24px -20px rgba(248, 98, 21, 0.42); }
-.stat-node svg { width: 42%; height: 42%; }
+.stat-stage.is-complete .stat-node { box-shadow: inset 0 1px 0 rgba(255, 230, 204, 0.22), 0 0 22px rgba(248, 98, 21, 0.2), 0 12px 26px -20px rgba(248, 98, 21, 0.6); }
+.stat-node svg { position: relative; z-index: 1; width: 42%; height: 42%; }
 .stat-number {
   font-family: var(--font-body);
   font-weight: 700;
   margin-top: 26px;
   font-size: clamp(1.7rem, 3vw, 3.05rem);
-  color: #f86215;
+  color: var(--amber);
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }

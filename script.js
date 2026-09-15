@@ -394,11 +394,18 @@ statEls.forEach(el => statObserver.observe(el));
   }
 
   function setProgress(progress) {
-    const stageStarts = [0, 0.16, 0.42, 0.68];
-    stages.forEach((stage, index) => stage.classList.toggle("is-active", progress >= stageStarts[index]));
+    const stageStarts = [0, 0.25, 0.5, 0.75];
+    const ringDuration = 0.14;
+    stages.forEach((stage, index) => {
+      const ringProgress = clamp((progress - stageStarts[index]) / ringDuration);
+      const node = stage.querySelector(".stat-node");
+      stage.classList.toggle("is-active", progress >= stageStarts[index]);
+      stage.classList.toggle("is-complete", ringProgress >= 0.98);
+      node?.style.setProperty("--node-progress", `${ringProgress * 100}%`);
+    });
     lines.forEach((line, index) => {
-      const start = [0.16, 0.42, 0.68][index];
-      const segmentProgress = clamp((progress - start) / 0.15);
+      const start = [0.14, 0.39, 0.64][index];
+      const segmentProgress = clamp((progress - start) / 0.11);
       line.style.strokeDashoffset = String(Number(line.dataset.length || 0) * (1 - segmentProgress));
     });
   }
@@ -406,7 +413,10 @@ statEls.forEach(el => statObserver.observe(el));
   function update() {
     framePending = false;
     if (reducedMotion || !desktopTimeline()) {
-      stages.forEach(stage => stage.classList.add("is-active"));
+      stages.forEach(stage => {
+        stage.classList.add("is-active", "is-complete");
+        stage.querySelector(".stat-node")?.style.setProperty("--node-progress", "100%");
+      });
       lines.forEach(line => { line.style.strokeDashoffset = "0"; });
       return;
     }
