@@ -394,14 +394,17 @@ statEls.forEach(el => statObserver.observe(el));
   }
 
   function setProgress(progress) {
-    const stageStarts = [0, 0.25, 0.5, 0.75];
-    const ringDuration = 0.14;
+    // Each item first appears as an empty circle. Its ring then draws during
+    // the next scroll interval, before the following item is revealed.
+    const revealStarts = [0, 0.25, 0.5, 0.75];
+    const fillStarts = [0.08, 0.33, 0.58, 0.83];
+    const ringDuration = 0.16;
     stages.forEach((stage, index) => {
-      const ringProgress = clamp((progress - stageStarts[index]) / ringDuration);
+      const ringProgress = clamp((progress - fillStarts[index]) / ringDuration);
       const node = stage.querySelector(".stat-node");
-      stage.classList.toggle("is-active", progress >= stageStarts[index]);
+      stage.classList.toggle("is-active", progress >= revealStarts[index]);
       stage.classList.toggle("is-complete", ringProgress >= 0.98);
-      node?.style.setProperty("--node-progress", `${ringProgress * 100}%`);
+      node?.style.setProperty("--ring-angle", `${ringProgress * 360}deg`);
     });
     lines.forEach((line, index) => {
       const start = [0.14, 0.39, 0.64][index];
@@ -415,7 +418,7 @@ statEls.forEach(el => statObserver.observe(el));
     if (reducedMotion || !desktopTimeline()) {
       stages.forEach(stage => {
         stage.classList.add("is-active", "is-complete");
-        stage.querySelector(".stat-node")?.style.setProperty("--node-progress", "100%");
+        stage.querySelector(".stat-node")?.style.setProperty("--ring-angle", "360deg");
       });
       lines.forEach(line => { line.style.strokeDashoffset = "0"; });
       return;
