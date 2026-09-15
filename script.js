@@ -95,46 +95,50 @@ function registerAutoplayVideo(video) {
   scrollAutoplayObserver.observe(video);
 }
 
-const VIDEO_BASE = "https://content-grown.vercel.app/work/";
-const samples = [
-  { file: "hero-1", poster: "hero-1-poster.jpg" },
-  { file: "hero-2", poster: "hero-2-poster.jpg" },
-  { file: "hero-3", poster: "hero-3-poster.jpg" },
-  { file: "hero-4", poster: "hero-4-poster.jpg" },
-];
+const PORTFOLIO_BASE = "assets/portfolio/";
 
-/* ---------- Work grid data ---------- */
+/* ---------- Work grid data (real client work) ---------- */
 const workItems = [
-  { cat: "short", label: "Short-Form" },
-  { cat: "short", label: "Short-Form" },
-  { cat: "short", label: "Short-Form" },
-  { cat: "short", label: "Short-Form" },
-  { cat: "long", label: "Long-Form" },
-  { cat: "long", label: "Long-Form" },
-  { cat: "long", label: "Long-Form" },
-  { cat: "ads", label: "Ads & VSLs" },
-  { cat: "ads", label: "Ads & VSLs" },
-  { cat: "motion", label: "Motion Graphics" },
-  { cat: "motion", label: "Motion Graphics" },
-  { cat: "motion", label: "Motion Graphics" },
-  { cat: "motion", label: "Motion Graphics" },
+  { cat: "ads", label: "Ads & VSLs", file: "ads/ad-1.mp4" },
+  { cat: "ads", label: "Ads & VSLs", file: "ads/ad-2.mp4" },
+  { cat: "ads", label: "Ads & VSLs", file: "ads/ad-3.mp4" },
+  { cat: "ads", label: "Ads & VSLs", file: "ads/ad-4.mp4" },
+  { cat: "ads", label: "Ads & VSLs", file: "ads/ad-5.mp4" },
+  { cat: "ads", label: "Ads & VSLs", file: "vsls/office-vsl-preview.mp4" },
+  { cat: "ads", label: "Ads & VSLs", file: "vsls/vsl-1-preview.mp4" },
+  { cat: "ads", label: "Ads & VSLs", file: "vsls/vsl-4k-preview.mp4" },
+  { cat: "short", label: "Short-Form", file: "ai-content/mastermind-ad-techy.mp4" },
+  { cat: "short", label: "Short-Form", file: "ai-content/mastermind-cohort-4.mp4" },
+  { cat: "short", label: "Short-Form", file: "shortform/video-01.mp4" },
+  { cat: "short", label: "Short-Form", file: "shortform/video-1.mp4" },
+  { cat: "short", label: "Short-Form", file: "shortform/video-2.mp4" },
+  { cat: "short", label: "Short-Form", file: "shortform/video-3.mp4" },
+  { cat: "short", label: "Short-Form", file: "shortform/video-4.mp4" },
+  { cat: "short", label: "Short-Form", file: "shortform/video-5.mp4" },
+  { cat: "short", label: "Short-Form", file: "shortform/video-6.mp4" },
+  { cat: "short", label: "Short-Form", file: "shortform/video-7.mp4" },
+  { cat: "short", label: "Short-Form", file: "shortform/video-8.mp4" },
+  { cat: "long", label: "Long-Form", file: "vlogs/betting-vlog-preview.mp4" },
+  { cat: "long", label: "Long-Form", file: "vlogs/vlog-01-preview.mp4" },
 ];
 
 const workGrid = document.getElementById("work-grid");
-workItems.forEach((item, i) => {
-  const s = samples[i % samples.length];
+workItems.forEach((item) => {
+  const src = `${PORTFOLIO_BASE}${item.file}`;
+  const posterName = item.file.split("/").pop().replace(/\.mp4$/, ".jpg");
+  const poster = `${PORTFOLIO_BASE}posters/${posterName}`;
   const card = document.createElement("div");
   card.className = "work-card reveal";
   card.dataset.cat = item.cat;
   card.innerHTML = `
-    <video muted loop playsinline preload="metadata" poster="${VIDEO_BASE}${s.poster}">
-      <source src="${VIDEO_BASE}${s.file}.mp4" type="video/mp4">
+    <video muted loop playsinline preload="metadata" poster="${poster}">
+      <source src="${src}" type="video/mp4">
     </video>
     <span class="work-card-tag">${item.label}</span>
   `;
   const video = card.querySelector("video");
   registerAutoplayVideo(video);
-  card.addEventListener("click", () => openLightbox(`${VIDEO_BASE}${s.file}.mp4`));
+  card.addEventListener("click", () => openLightbox(src));
   workGrid.appendChild(card);
 });
 
