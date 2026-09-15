@@ -651,6 +651,7 @@ section[id], #top { scroll-margin-top: 110px; }
   gap: clamp(26px, 5vw, 100px);
   align-items: start;
   padding: 16px 0;
+  transform: translateY(-26vh);
 }
 .stat-connectors {
   position: absolute;
