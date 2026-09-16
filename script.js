@@ -143,12 +143,9 @@ workItems.forEach((item) => {
     card.classList.toggle("landscape", isLandscape);
     if (activeWorkFilter === "all") card.classList.toggle("hidden", isLandscape);
   }, { once: true });
-  // Preview plays only on hover, not on scroll-into-view — with 21 cards in
-  // this grid, autoplaying every card that scrolls 50% into view meant
-  // several 1080p videos could be decoding at once, which is what caused
-  // the stutter/lag.
-  card.addEventListener("mouseenter", () => { video.currentTime = 0; video.play().catch(() => {}); });
-  card.addEventListener("mouseleave", () => { video.pause(); video.currentTime = 0; });
+  // Grid cards stay on their static poster frame - no autoplay on scroll
+  // (too many videos decoding at once caused stutter) and no play-on-hover
+  // either. Video only plays once someone actually opens the lightbox.
   card.addEventListener("click", () => openLightbox(src));
   workGrid.appendChild(card);
 });
