@@ -99,37 +99,37 @@ const PORTFOLIO_BASE = "assets/portfolio/";
 
 /* ---------- Work grid data (real client work) ---------- */
 const workItems = [
-  { cat: "ads", label: "Ads & VSLs", file: "ads/ad-1.mp4" },
-  { cat: "ads", label: "Ads & VSLs", file: "ads/ad-2.mp4" },
-  { cat: "ads", label: "Ads & VSLs", file: "ads/ad-3.mp4" },
-  { cat: "ads", label: "Ads & VSLs", file: "ads/ad-4.mp4" },
-  { cat: "ads", label: "Ads & VSLs", file: "ads/ad-5.mp4" },
-  { cat: "ads", label: "Ads & VSLs", file: "vsls/office-vsl-preview.mp4" },
-  { cat: "ads", label: "Ads & VSLs", file: "vsls/vsl-1-preview.mp4" },
-  { cat: "ads", label: "Ads & VSLs", file: "vsls/vsl-4k-preview.mp4" },
-  { cat: "short", label: "Short-Form", file: "ai-content/mastermind-ad-techy.mp4" },
-  { cat: "short", label: "Short-Form", file: "ai-content/mastermind-cohort-4.mp4" },
-  { cat: "short", label: "Short-Form", file: "shortform/video-01.mp4" },
-  { cat: "short", label: "Short-Form", file: "shortform/video-1.mp4" },
-  { cat: "short", label: "Short-Form", file: "shortform/video-2.mp4" },
-  { cat: "short", label: "Short-Form", file: "shortform/video-3.mp4" },
-  { cat: "short", label: "Short-Form", file: "shortform/video-4.mp4" },
-  { cat: "short", label: "Short-Form", file: "shortform/video-5.mp4" },
-  { cat: "short", label: "Short-Form", file: "shortform/video-6.mp4" },
-  { cat: "short", label: "Short-Form", file: "shortform/video-7.mp4" },
-  { cat: "short", label: "Short-Form", file: "shortform/video-8.mp4" },
-  { cat: "long", label: "Long-Form", file: "vlogs/betting-vlog-preview.mp4" },
-  { cat: "long", label: "Long-Form", file: "vlogs/vlog-01-preview.mp4" },
+  { cats: ["ads"], label: "Ads", file: "ads/ad-1.mp4" },
+  { cats: ["ads"], label: "Ads", file: "ads/ad-2.mp4" },
+  { cats: ["ads"], label: "Ads", file: "ads/ad-3.mp4" },
+  { cats: ["ads"], label: "Ads", file: "ads/ad-4.mp4" },
+  { cats: ["ads"], label: "Ads", file: "ads/ad-5.mp4" },
+  { cats: ["vsl"], label: "VSLs", file: "vsls/office-vsl-preview.mp4" },
+  { cats: ["vsl"], label: "VSLs", file: "vsls/vsl-1-preview.mp4" },
+  { cats: ["vsl"], label: "VSLs", file: "vsls/vsl-4k-preview.mp4" },
+  { cats: ["short", "ai"], label: "AI Content", file: "ai-content/mastermind-ad-techy.mp4" },
+  { cats: ["short", "cashcow"], label: "Cashcow Content", file: "shortform/video-01.mp4" },
+  { cats: ["short", "cashcow"], label: "Cashcow Content", file: "shortform/video-1.mp4" },
+  { cats: ["short", "cashcow"], label: "Cashcow Content", file: "shortform/video-2.mp4" },
+  { cats: ["short", "cashcow"], label: "Cashcow Content", file: "shortform/video-3.mp4" },
+  { cats: ["short", "cashcow"], label: "Cashcow Content", file: "shortform/video-4.mp4" },
+  { cats: ["short", "cashcow"], label: "Cashcow Content", file: "shortform/video-5.mp4" },
+  { cats: ["short", "cashcow"], label: "Cashcow Content", file: "shortform/video-6.mp4" },
+  { cats: ["short", "cashcow"], label: "Cashcow Content", file: "shortform/video-7.mp4" },
+  { cats: ["short", "cashcow"], label: "Cashcow Content", file: "shortform/video-8.mp4" },
+  { cats: ["long", "vlogs"], label: "Vlogs", file: "vlogs/betting-vlog-preview.mp4" },
+  { cats: ["long", "vlogs"], label: "Vlogs", file: "vlogs/vlog-01-preview.mp4" },
 ];
 
 const workGrid = document.getElementById("work-grid");
+let activeWorkFilter = "all";
 workItems.forEach((item) => {
   const src = `${PORTFOLIO_BASE}${item.file}`;
   const posterName = item.file.split("/").pop().replace(/\.mp4$/, ".jpg");
   const poster = `${PORTFOLIO_BASE}posters/${posterName}`;
   const card = document.createElement("div");
   card.className = "work-card reveal";
-  card.dataset.cat = item.cat;
+  card.dataset.cat = item.cats.join(" ");
   card.innerHTML = `
     <video muted loop playsinline preload="metadata" poster="${poster}">
       <source src="${src}" type="video/mp4">
@@ -137,6 +137,12 @@ workItems.forEach((item) => {
     <span class="work-card-tag">${item.label}</span>
   `;
   const video = card.querySelector("video");
+  video.addEventListener("loadedmetadata", () => {
+    const isLandscape = video.videoWidth >= video.videoHeight;
+    card.dataset.format = isLandscape ? "landscape" : "reel";
+    card.classList.toggle("landscape", isLandscape);
+    if (activeWorkFilter === "all") card.classList.toggle("hidden", isLandscape);
+  }, { once: true });
   // Preview plays only on hover, not on scroll-into-view — with 21 cards in
   // this grid, autoplaying every card that scrolls 50% into view meant
   // several 1080p videos could be decoding at once, which is what caused
@@ -148,14 +154,23 @@ workItems.forEach((item) => {
 });
 
 const filterTabs = document.querySelectorAll(".filter-tab");
+
+function applyWorkFilter(filter) {
+  document.querySelectorAll(".work-card").forEach(card => {
+    const matches = filter === "all"
+      ? card.dataset.format !== "landscape"
+      : card.dataset.cat.split(" ").includes(filter);
+    card.classList.toggle("hidden", !matches);
+  });
+}
+
 filterTabs.forEach(tab => {
   tab.addEventListener("click", () => {
     filterTabs.forEach(t => t.classList.remove("active"));
     tab.classList.add("active");
     const filter = tab.dataset.filter;
-    document.querySelectorAll(".work-card").forEach(card => {
-      card.classList.toggle("hidden", filter !== "all" && card.dataset.cat !== filter);
-    });
+    activeWorkFilter = filter;
+    applyWorkFilter(filter);
   });
 });
 
@@ -342,6 +357,7 @@ faqs.forEach(f => {
 /* ---------- Liquid bubble stat bar ---------- */
 (function () {
   const section = document.getElementById("stat-bar-section");
+  const scrollDriver = document.getElementById("problem") || section;
   const bar = document.getElementById("stat-bar");
   const bubble = document.getElementById("stat-bubble");
   if (!section || !bar || !bubble) return;
@@ -428,8 +444,8 @@ faqs.forEach(f => {
   let scrollRaf = null;
   function updateFromScroll() {
     scrollRaf = null;
-    const dist = section.offsetHeight - window.innerHeight;
-    const progress = dist > 0 ? clamp((window.scrollY - section.offsetTop) / dist) : 0;
+    const dist = scrollDriver.offsetHeight - window.innerHeight;
+    const progress = dist > 0 ? clamp((window.scrollY - scrollDriver.offsetTop) / dist) : 0;
     setActive(Math.min(items.length - 1, Math.floor(progress * items.length)));
     requestSpring();
   }
@@ -550,9 +566,13 @@ if (finePointer) {
 }
 
 /* ---------- Cursor-reactive card tilt ---------- */
+// .work-card is deliberately excluded: those cards now play their video on
+// hover, and skewing a *playing* video through a 3D perspective transform
+// reads as glitchy rather than premium - it only looked good back when
+// hover just showed a static poster frame.
 if (finePointer) {
   const tiltMax = 10; // degrees
-  document.querySelectorAll(".work-card, .why-card, .proof-video-card").forEach((card) => {
+  document.querySelectorAll(".why-card, .proof-video-card").forEach((card) => {
     let queued = false;
     let rotX = 0, rotY = 0;
     card.style.transformStyle = "preserve-3d";

@@ -625,16 +625,17 @@ section[id], #top { scroll-margin-top: 110px; }
 }
 
 /* ---------- Liquid bubble stat bar ---------- */
-.stat-bar-section { position: relative; height: 120vh; }
+.stat-bar-section {
+  position: relative;
+  margin-top: 34px;
+}
 .stat-bar-inner {
-  position: sticky;
-  top: 0;
-  height: 100vh;
+  position: relative;
+  height: auto;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0 24px;
-  transform: translateY(-28vh);
 }
 .stat-bar {
   position: relative;
@@ -744,7 +745,17 @@ section[id], #top { scroll-margin-top: 110px; }
   position: relative;
   border: 2px solid rgba(248, 98, 21, 0.85);
 }
-.problem { margin-top: 10vh; padding: 42px 0 30px; }
+.problem { position: relative; height: 218vh; margin-top: 10vh; padding: 0; }
+.problem-stage {
+  position: sticky;
+  top: 0;
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: clamp(72px, 12vh, 150px) 0 44px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
 .problem-grid {
   display: grid;
   grid-template-columns: 1.1fr 0.9fr;
@@ -816,6 +827,8 @@ section[id], #top { scroll-margin-top: 110px; }
 }
 .work-card:hover { border-color: var(--line-soft); transform: translateY(-2px); }
 .work-card video, .work-card img { width: 100%; height: 100%; object-fit: cover; }
+.work-card.landscape { aspect-ratio: 16/9; }
+.work-card.landscape video { object-fit: contain; }
 .work-card-tag {
   position: absolute;
   bottom: 12px; left: 12px;
@@ -1081,7 +1094,9 @@ section[id], #top { scroll-margin-top: 110px; }
     font-size: clamp(2.1rem, 9.5vw, 3.4rem);
     text-wrap: balance;
   }
-  .stat-bar-section { height: auto; padding: 64px 24px; }
+  .problem { height: auto; padding: 72px 0 0; }
+  .problem-stage { position: relative; min-height: 0; padding: 0 0 40px; }
+  .stat-bar-section { height: auto; padding: 40px 24px 0; }
   .stat-bar-inner { position: relative; height: auto; padding: 0; transform: none; }
   .stat-bar { padding: 6px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; }
   .stat-bar::-webkit-scrollbar { display: none; }
