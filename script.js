@@ -107,15 +107,15 @@ const workItems = [
   { cats: ["vsl"], label: "VSLs", file: "vsls/office-vsl-preview.mp4" },
   { cats: ["vsl"], label: "VSLs", file: "vsls/vsl-1-preview.mp4" },
   { cats: ["vsl"], label: "VSLs", file: "vsls/vsl-4k-preview.mp4" },
-  { cats: ["short", "ai"], label: "AI Content", file: "ai-content/mastermind-ad-techy.mp4" },
-  { cats: ["short", "cashcow"], label: "Cashcow Content", file: "shortform/video-01.mp4" },
+  { cats: ["short", "ai"], label: "AI Content", file: "ai-content/mastermind-ad-techy.mp4", hideFromAll: true },
+  { cats: ["short", "cashcow"], label: "Cashcow Content", file: "shortform/video-01.mp4", hideFromAll: true },
   { cats: ["short", "cashcow"], label: "Cashcow Content", file: "shortform/video-1.mp4" },
   { cats: ["short", "cashcow"], label: "Cashcow Content", file: "shortform/video-2.mp4" },
   { cats: ["short", "cashcow"], label: "Cashcow Content", file: "shortform/video-3.mp4" },
   { cats: ["short", "cashcow"], label: "Cashcow Content", file: "shortform/video-4.mp4" },
   { cats: ["short", "cashcow"], label: "Cashcow Content", file: "shortform/video-5.mp4" },
   { cats: ["short", "cashcow"], label: "Cashcow Content", file: "shortform/video-6.mp4" },
-  { cats: ["short", "cashcow"], label: "Cashcow Content", file: "shortform/video-7.mp4" },
+  { cats: ["short", "cashcow"], label: "Cashcow Content", file: "shortform/video-7.mp4", hideFromAll: true },
   { cats: ["short", "cashcow"], label: "Cashcow Content", file: "shortform/video-8.mp4" },
   { cats: ["long", "vlogs"], label: "Vlogs", file: "vlogs/betting-vlog-preview.mp4" },
   { cats: ["long", "vlogs"], label: "Vlogs", file: "vlogs/vlog-01-preview.mp4" },
@@ -130,6 +130,14 @@ workItems.forEach((item) => {
   const card = document.createElement("div");
   card.className = "work-card reveal";
   card.dataset.cat = item.cats.join(" ");
+  if (item.hideFromAll) {
+    card.dataset.hideFromAll = "true";
+    // Set synchronously at creation, not through applyWorkFilter (which
+    // only runs on a tab click) - otherwise these show up on the default
+    // "All" view for a moment before anything hides them. Clicking their
+    // actual category tab still reveals them normally.
+    card.classList.add("hidden");
+  }
   card.innerHTML = `
     <video muted loop playsinline preload="metadata" poster="${poster}">
       <source src="${src}" type="video/mp4">
@@ -141,11 +149,17 @@ workItems.forEach((item) => {
     const isLandscape = video.videoWidth >= video.videoHeight;
     card.dataset.format = isLandscape ? "landscape" : "reel";
     card.classList.toggle("landscape", isLandscape);
-    if (activeWorkFilter === "all") card.classList.toggle("hidden", isLandscape);
+    // Only touch visibility for the "all" view, and only in the direction
+    // of hiding landscape cards - never force-unhide, or this would undo
+    // the permanent hideFromAll flag on cards that happen to be portrait.
+    if (activeWorkFilter === "all" && isLandscape) card.classList.add("hidden");
   }, { once: true });
-  // Grid cards stay on their static poster frame - no autoplay on scroll
-  // (too many videos decoding at once caused stutter) and no play-on-hover
-  // either. Video only plays once someone actually opens the lightbox.
+  // Preview plays only on hover, not on scroll-into-view — with 21 cards in
+  // this grid, autoplaying every card that scrolls 50% into view meant
+  // several 1080p videos could be decoding at once, which is what caused
+  // the stutter/lag.
+  card.addEventListener("mouseenter", () => { video.currentTime = 0; video.play().catch(() => {}); });
+  card.addEventListener("mouseleave", () => { video.pause(); video.currentTime = 0; });
   card.addEventListener("click", () => openLightbox(src));
   workGrid.appendChild(card);
 });
@@ -155,7 +169,7 @@ const filterTabs = document.querySelectorAll(".filter-tab");
 function applyWorkFilter(filter) {
   document.querySelectorAll(".work-card").forEach(card => {
     const matches = filter === "all"
-      ? card.dataset.format !== "landscape"
+      ? card.dataset.format !== "landscape" && card.dataset.hideFromAll !== "true"
       : card.dataset.cat.split(" ").includes(filter);
     card.classList.toggle("hidden", !matches);
   });
