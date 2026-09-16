@@ -339,140 +339,126 @@ faqs.forEach(f => {
   faqList.appendChild(item);
 });
 
-/* ---------- Stats count-up ---------- */
-const statEls = document.querySelectorAll(".stat-number");
-const statObserver = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (!entry.isIntersecting) return;
-    const el = entry.target;
-    const target = parseInt(el.dataset.target, 10);
-    const prefix = el.dataset.prefix || "";
-    const suffix = el.dataset.suffix || "";
-    const duration = 1400;
-    const start = performance.now();
-    function tick(now) {
-      const progress = Math.min((now - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      const value = Math.round(eased * target);
-      el.textContent = `${prefix}${value}${suffix}`;
-      if (progress < 1) requestAnimationFrame(tick);
-    }
-    requestAnimationFrame(tick);
-    statObserver.unobserve(el);
-  });
-}, { threshold: 0.4 });
-statEls.forEach(el => statObserver.observe(el));
-
-/* ---------- Stat ring fill, holds scroll until all four finish ---------- */
+/* ---------- Liquid bubble stat bar ---------- */
 (function () {
-  const section = document.querySelector(".stats-bar");
-  const timeline = document.getElementById("stats-grid");
-  if (!section || !timeline) return;
+  const section = document.getElementById("stat-bar-section");
+  const bar = document.getElementById("stat-bar");
+  const bubble = document.getElementById("stat-bubble");
+  if (!section || !bar || !bubble) return;
 
-  const stages = Array.from(timeline.querySelectorAll(".stat-stage"));
-  const nodes = stages.map(s => s.querySelector(".stat-node"));
+  const items = Array.from(bar.querySelectorAll(".stat-item"));
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const clamp = v => Math.max(0, Math.min(1, v));
+  const isDesktop = () => window.innerWidth > 900;
+
+  let activeIndex = 0;
+  function setActive(index) {
+    if (index === activeIndex) return;
+    activeIndex = index;
+    items.forEach((item, i) => item.classList.toggle("active", i === index));
+  }
+
+  function syncBubbleWidth() {
+    const w = items[0]?.getBoundingClientRect().width || 0;
+    bar.style.setProperty("--bubble-w", `${w}px`);
+  }
 
   if (reducedMotion) {
-    stages.forEach((stage, i) => {
-      stage.classList.add("is-active", "is-complete");
-      nodes[i]?.style.setProperty("--ring-angle", "360deg");
+    // No spring, no scroll-pin - jump straight to whichever item is in
+    // frame and stop there.
+    items[0]?.classList.add("active");
+    syncBubbleWidth();
+    bar.style.setProperty("--bubble-x", `${items[0]?.offsetLeft || 0}px`);
+    window.addEventListener("resize", () => {
+      syncBubbleWidth();
+      bar.style.setProperty("--bubble-x", `${items[activeIndex]?.offsetLeft || 0}px`);
     });
     return;
   }
 
-  // Each stage gets an equal, back-to-back slice of progress, so stage 1
-  // fills 0->360 first, then stage 2, then stage 3, etc.
-  const slice = 1 / stages.length;
-  const windows = stages.map((_, i) => [i * slice, (i + 1) * slice]);
-
-  // `target` is where wheel/touch input wants the fill to be (can jump
-  // instantly, e.g. a fast flick). `displayed` is what's actually rendered,
-  // and can only move toward target at a capped rate per second - so a
-  // single hard scroll can't blow through all four circles at once, and a
-  // single jittery tick can't release the lock early either, since release
-  // only fires once `displayed` itself has genuinely reached the boundary.
-  let target = 0;
-  let displayed = 0;
-  let locked = false;
-  let completed = false;
-  let rafId = null;
+  // Spring: bubbleX eases toward the active item's position with a touch
+  // of overshoot before settling, rather than snapping or tweening linearly.
+  let bubbleX = items[0]?.offsetLeft || 0;
+  let bubbleVel = 0;
+  let springRaf = null;
   let lastTime = null;
-  const RATE = 1 / 2.5; // full 0->1 traverse takes at least ~2.5s
+  const STIFFNESS = 210;
+  const DAMPING = 21;
 
-  function render() {
-    stages.forEach((stage, i) => {
-      const [start, end] = windows[i];
-      const stageProgress = clamp((displayed - start) / (end - start));
-      stage.classList.toggle("is-active", displayed > start + 0.01);
-      stage.classList.toggle("is-complete", stageProgress >= 0.97);
-      nodes[i]?.style.setProperty("--ring-angle", `${stageProgress * 360}deg`);
-    });
-  }
-
-  function loop(now) {
+  function springTick(now) {
     if (lastTime === null) lastTime = now;
-    const maxStep = RATE * ((now - lastTime) / 1000);
+    const dt = Math.min((now - lastTime) / 1000, 0.05);
     lastTime = now;
-    if (displayed < target) displayed = Math.min(target, displayed + maxStep);
-    else if (displayed > target) displayed = Math.max(target, displayed - maxStep);
-    render();
-    if (!locked) return;
-    if (displayed >= 1) { completed = true; release(); return; }
-    if (displayed <= 0 && target <= 0) { release(); return; }
-    rafId = requestAnimationFrame(loop);
+    const target = items[activeIndex]?.offsetLeft || 0;
+    const dx = target - bubbleX;
+    const accel = dx * STIFFNESS - bubbleVel * DAMPING;
+    bubbleVel += accel * dt;
+    bubbleX += bubbleVel * dt;
+
+    const stretch = clamp(1 + Math.min(Math.abs(bubbleVel) * 0.00028, 0.2));
+    bar.style.setProperty("--bubble-x", `${bubbleX}px`);
+    bar.style.setProperty("--bubble-stretch", stretch.toFixed(3));
+
+    if (Math.abs(dx) > 0.4 || Math.abs(bubbleVel) > 1) {
+      springRaf = requestAnimationFrame(springTick);
+    } else {
+      bubbleX = target;
+      bubbleVel = 0;
+      bar.style.setProperty("--bubble-x", `${bubbleX}px`);
+      bar.style.setProperty("--bubble-stretch", "1");
+      springRaf = null;
+      lastTime = null;
+    }
+  }
+  function requestSpring() {
+    if (!springRaf) springRaf = requestAnimationFrame(springTick);
   }
 
-  function engage() {
-    if (locked || completed) return;
-    locked = true;
-    lastTime = null;
-    document.body.classList.add("scroll-locked");
-    rafId = requestAnimationFrame(loop);
-  }
-  function release() {
-    locked = false;
-    document.body.classList.remove("scroll-locked");
-    if (rafId) cancelAnimationFrame(rafId);
-    rafId = null;
-  }
-
-  // Wheel delta magnitude varies wildly by device (trackpad vs. mouse
-  // wheel); this only needs to move the *target*, since displayed is what's
-  // actually rate-limited.
-  const DELTA_SCALE = 0.0022;
-
-  function onWheel(e) {
-    if (!locked) return;
-    e.preventDefault();
-    target = clamp(target + e.deltaY * DELTA_SCALE);
+  // Desktop: the pinned section's own scroll passage drives progress
+  // (position: sticky handles the actual pin/release natively - no wheel
+  // interception, no preventDefault, so scrolling stays completely native
+  // and reverses correctly on its own).
+  //
+  // Mobile/tablet has no pin - the bar itself is short and scrolls
+  // *horizontally* instead (see the max-width:900px rules), so driving
+  // the bubble off vertical page-scroll would make it jump straight to
+  // the last item the moment the bar reaches a normal reading position.
+  // Tying it to the bar's own horizontal scrollLeft instead makes the
+  // bubble follow whichever item the visitor has actually swiped to.
+  let scrollRaf = null;
+  function updateFromScroll() {
+    scrollRaf = null;
+    const dist = section.offsetHeight - window.innerHeight;
+    const progress = dist > 0 ? clamp((window.scrollY - section.offsetTop) / dist) : 0;
+    setActive(Math.min(items.length - 1, Math.floor(progress * items.length)));
+    requestSpring();
   }
 
-  let touchY = null;
-  function onTouchStart(e) {
-    if (!locked) return;
-    touchY = e.touches[0].clientY;
+  function updateFromBarScroll() {
+    scrollRaf = null;
+    const maxScroll = bar.scrollWidth - bar.clientWidth;
+    const progress = maxScroll > 0 ? clamp(bar.scrollLeft / maxScroll) : 0;
+    setActive(Math.min(items.length - 1, Math.round(progress * (items.length - 1))));
+    requestSpring();
   }
-  function onTouchMove(e) {
-    if (!locked || touchY === null) return;
-    e.preventDefault();
-    const y = e.touches[0].clientY;
-    const delta = touchY - y; // finger moving up = scrolling down
-    touchY = y;
-    target = clamp(target + delta * DELTA_SCALE * 2.2);
+  function requestScrollUpdate() {
+    if (!isDesktop() || scrollRaf) return;
+    scrollRaf = requestAnimationFrame(updateFromScroll);
+  }
+  function requestBarScrollUpdate() {
+    if (isDesktop() || scrollRaf) return;
+    scrollRaf = requestAnimationFrame(updateFromBarScroll);
   }
 
-  window.addEventListener("wheel", onWheel, { passive: false });
-  window.addEventListener("touchstart", onTouchStart, { passive: true });
-  window.addEventListener("touchmove", onTouchMove, { passive: false });
-
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting && entry.intersectionRatio > 0.6) engage();
-    });
-  }, { threshold: [0.6] });
-  observer.observe(section);
+  window.addEventListener("scroll", requestScrollUpdate, { passive: true });
+  bar.addEventListener("scroll", requestBarScrollUpdate, { passive: true });
+  window.addEventListener("resize", () => {
+    syncBubbleWidth();
+    if (isDesktop()) requestScrollUpdate(); else requestBarScrollUpdate();
+  });
+  items[0]?.classList.add("active");
+  syncBubbleWidth();
+  if (isDesktop()) requestScrollUpdate(); else requestBarScrollUpdate();
 })();
 
 /* ---------- Scroll reveal ---------- */
