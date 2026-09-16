@@ -625,7 +625,7 @@ section[id], #top { scroll-margin-top: 110px; }
 }
 
 /* ---------- Liquid bubble stat bar ---------- */
-.stat-bar-section { position: relative; height: 400vh; }
+.stat-bar-section { position: relative; height: 120vh; }
 .stat-bar-inner {
   position: sticky;
   top: 0;
