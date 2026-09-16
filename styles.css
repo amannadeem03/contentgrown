@@ -634,6 +634,7 @@ section[id], #top { scroll-margin-top: 110px; }
   align-items: center;
   justify-content: center;
   padding: 0 24px;
+  transform: translateY(-28vh);
 }
 .stat-bar {
   position: relative;
@@ -1081,7 +1082,7 @@ section[id], #top { scroll-margin-top: 110px; }
     text-wrap: balance;
   }
   .stat-bar-section { height: auto; padding: 64px 24px; }
-  .stat-bar-inner { position: relative; height: auto; padding: 0; }
+  .stat-bar-inner { position: relative; height: auto; padding: 0; transform: none; }
   .stat-bar { padding: 6px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; }
   .stat-bar::-webkit-scrollbar { display: none; }
   .stat-item { min-width: 150px; padding: 18px 14px; scroll-snap-align: start; }
