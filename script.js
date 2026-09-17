@@ -188,28 +188,58 @@ filterTabs.forEach(tab => {
 
 /* ---------- Services ---------- */
 const services = [
-  { tag: "Content Editing", title: "Short-Form Content", desc: "Reels, Shorts, and TikToks edited for hooks, pacing, and retention." },
-  { tag: "Content Editing", title: "Long-Form Content", desc: "YouTube videos edited for structure and watch time." },
-  { tag: "Content Editing", title: "Ads & VSLs", desc: "Direct-response video built around a single conversion goal." },
-  { tag: "Design & Motion", title: "Motion Graphics", desc: "Animation, kinetic type, and branded visual elements." },
-  { tag: "Design & Motion", title: "Graphic Design", desc: "Thumbnails, covers, and static assets that match your video work." },
-  { tag: "Systems & Management", title: "Social Media Management", desc: "Scheduling, publishing, and platform-side execution." },
-  { tag: "Systems & Management", title: "Content Systems", desc: "The workflow behind it all: intake, feedback, approvals, and delivery, running on a fixed schedule." },
+  { tag: "Content Production", title: "Video Editing", desc: "Scroll-stopping edits built for stronger pacing, clarity, and retention." },
+  { tag: "Content Production", title: "AI Content Creation", desc: "Concepts and content produced with AI to help you move faster without losing your voice." },
+  { tag: "Design & Motion", title: "Graphic Design", desc: "Thumbnails, covers, and visual assets that make your content instantly recognisable." },
+  { tag: "Growth & Distribution", title: "Social Media Management", desc: "A dependable content system for planning, publishing, and growing your presence." },
 ];
 const servicesList = document.getElementById("services-list");
 services.forEach((s, i) => {
   const row = document.createElement("div");
-  row.className = "service-row reveal";
+  row.className = "service-row";
   row.innerHTML = `
     <div class="service-index">0${i + 1}</div>
     <div class="service-title-wrap">
-      <h3>${s.title}</h3>
       <span class="service-tag">${s.tag}</span>
+      <h3 class="${i === 0 ? "service-title-nowrap" : ""}">${s.title}</h3>
     </div>
     <p class="service-desc">${s.desc}</p>
   `;
   servicesList.appendChild(row);
 });
+
+/* Three-card Services carousel: scroll advances the next card to the centre. */
+(function () {
+  const section = document.getElementById("services");
+  const cards = Array.from(document.querySelectorAll(".service-row"));
+  const dotsHost = document.getElementById("services-dots");
+  const counter = document.getElementById("service-current");
+  if (!section || !cards.length || !dotsHost || !counter) return;
+
+  const dots = cards.map(() => {
+    const dot = document.createElement("span");
+    dot.className = "services-dot";
+    dotsHost.appendChild(dot);
+    return dot;
+  });
+  let active = -1;
+  function updateServicesCarousel() {
+    if (window.innerWidth <= 900) return;
+    const distance = section.offsetHeight - window.innerHeight;
+    const progress = distance > 0 ? Math.max(0, Math.min(1, (window.scrollY - section.offsetTop) / distance)) : 0;
+    const index = Math.min(cards.length - 1, Math.floor(progress * cards.length));
+    if (index === active) return;
+    active = index;
+    cards.forEach((card, i) => {
+      card.className = `service-row ${i === index ? "active" : i === (index - 1 + cards.length) % cards.length ? "previous" : i === (index + 1) % cards.length ? "next" : ""}`;
+    });
+    dots.forEach((dot, i) => dot.classList.toggle("active", i === index));
+    counter.textContent = String(index + 1).padStart(2, "0");
+  }
+  window.addEventListener("scroll", updateServicesCarousel, { passive: true });
+  window.addEventListener("resize", updateServicesCarousel);
+  updateServicesCarousel();
+})();
 
 /* ---------- Header services dropdown (desktop hover/focus + mobile accordion) ---------- */
 const serviceCategories = [...new Set(services.map(s => s.tag))];
