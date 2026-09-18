@@ -208,7 +208,11 @@ services.forEach((s, i) => {
   servicesList.appendChild(row);
 });
 
-/* Three-card Services carousel: scroll advances the next card to the centre. */
+/* Three-card Services carousel: continuously eases toward the scroll-driven
+   card index every frame (same technique as the liquid stat bar below)
+   instead of snapping between four CSS classes on a fixed-duration
+   transition - that's what made it feel stepped/glitchy against fast or
+   slow scrolling instead of tracking the gesture smoothly. */
 (function () {
   const section = document.getElementById("services");
   const cards = Array.from(document.querySelectorAll(".service-row"));
@@ -216,29 +220,117 @@ services.forEach((s, i) => {
   const counter = document.getElementById("service-current");
   if (!section || !cards.length || !dotsHost || !counter) return;
 
+  const n = cards.length;
   const dots = cards.map(() => {
     const dot = document.createElement("span");
     dot.className = "services-dot";
     dotsHost.appendChild(dot);
     return dot;
   });
-  let active = -1;
-  function updateServicesCarousel() {
-    if (window.innerWidth <= 900) return;
+
+  // Keyframes for a card's look at integer distance -2..2 from the active
+  // slot (0). Fractional distances interpolate linearly between these,
+  // reproducing the same four looks the old CSS classes had, but smoothly.
+  const KF_D = [-2, -1, 0, 1, 2];
+  const KF_OPACITY = [0, .30, 1, .32, 0];
+  const KF_Z = [-460, -210, 120, -190, -460];
+  const KF_ROTATE = [58, 20, 0, -20, -58];
+  const KF_SCALE = [.72, .77, 1, .77, .72];
+  const KF_X = [0, -103, 0, 3, 0];
+
+  function interp(points, d) {
+    const t = d + 2;
+    const i0 = Math.max(0, Math.min(3, Math.floor(t)));
+    const frac = t - i0;
+    return points[i0] + (points[i0 + 1] - points[i0]) * frac;
+  }
+
+  function wrapDistance(d) {
+    let w = ((d % n) + n) % n;
+    if (w > n / 2) w -= n;
+    return w;
+  }
+
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const isDesktop = () => window.innerWidth > 900;
+
+  let targetIndex = 0;
+  let displayIndex = 0;
+  let lastTime = null;
+  let raf = null;
+  const EASE_RATE = 10; // higher = snappier settle, no overshoot
+
+  function render(index) {
+    const nearest = ((Math.round(index) % n) + n) % n;
+    cards.forEach((card, i) => {
+      const d = Math.max(-2, Math.min(2, wrapDistance(i - index)));
+      const opacity = interp(KF_OPACITY, d);
+      const tz = interp(KF_Z, d);
+      const rot = interp(KF_ROTATE, d);
+      const scale = interp(KF_SCALE, d);
+      const x = interp(KF_X, d);
+      const dim = Math.min(1, Math.abs(d));
+      card.style.opacity = opacity;
+      card.style.transform = `translate(calc(-50% + ${x}%), -50%) translate3d(0,0,${tz}px) rotateY(${rot}deg) scale(${scale})`;
+      card.style.filter = dim < 0.02 ? "none" : `saturate(${1 - dim * .35}) brightness(${1 - dim * .28})`;
+      card.style.zIndex = String(Math.round(100 - Math.abs(d) * 10));
+    });
+    dots.forEach((dot, i) => dot.classList.toggle("active", i === nearest));
+    counter.textContent = String(nearest + 1).padStart(2, "0");
+  }
+
+  function resetInlineStyles() {
+    cards.forEach(card => {
+      card.style.opacity = "";
+      card.style.transform = "";
+      card.style.filter = "";
+      card.style.zIndex = "";
+    });
+  }
+
+  function tick(time) {
+    if (lastTime === null) lastTime = time;
+    const dt = Math.min(0.05, (time - lastTime) / 1000);
+    lastTime = time;
+    const ease = 1 - Math.exp(-EASE_RATE * dt);
+    displayIndex += (targetIndex - displayIndex) * ease;
+    if (Math.abs(targetIndex - displayIndex) < 0.001) displayIndex = targetIndex;
+    render(displayIndex);
+    if (displayIndex !== targetIndex) {
+      raf = requestAnimationFrame(tick);
+    } else {
+      raf = null;
+      lastTime = null;
+    }
+  }
+
+  function requestRender() {
+    if (raf) return;
+    raf = requestAnimationFrame(tick);
+  }
+
+  function updateTarget() {
+    if (!isDesktop()) {
+      if (raf) { cancelAnimationFrame(raf); raf = null; lastTime = null; }
+      resetInlineStyles();
+      return;
+    }
     const distance = section.offsetHeight - window.innerHeight;
     const progress = distance > 0 ? Math.max(0, Math.min(1, (window.scrollY - section.offsetTop) / distance)) : 0;
-    const index = Math.min(cards.length - 1, Math.floor(progress * cards.length));
-    if (index === active) return;
-    active = index;
-    cards.forEach((card, i) => {
-      card.className = `service-row ${i === index ? "active" : i === (index - 1 + cards.length) % cards.length ? "previous" : i === (index + 1) % cards.length ? "next" : ""}`;
-    });
-    dots.forEach((dot, i) => dot.classList.toggle("active", i === index));
-    counter.textContent = String(index + 1).padStart(2, "0");
+    targetIndex = Math.min(n - 1, progress * n);
+    if (reducedMotion) {
+      displayIndex = targetIndex;
+      render(displayIndex);
+    } else {
+      requestRender();
+    }
   }
-  window.addEventListener("scroll", updateServicesCarousel, { passive: true });
-  window.addEventListener("resize", updateServicesCarousel);
-  updateServicesCarousel();
+
+  window.addEventListener("scroll", updateTarget, { passive: true });
+  window.addEventListener("resize", updateTarget);
+  displayIndex = 0;
+  updateTarget();
+  render(displayIndex);
 })();
 
 /* ---------- Header services dropdown (desktop hover/focus + mobile accordion) ---------- */
