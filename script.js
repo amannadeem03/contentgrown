@@ -229,12 +229,14 @@ services.forEach((s, i) => {
   });
 
   // Keyframes as [distance, value] pairs, piecewise-linear between them.
-  // Opacity gets extra points around 0 so the active card stays fully
-  // solid (glass effect intact) across most of its dwell range instead of
-  // fading the instant scroll nudges it off-centre. X is now symmetric -
-  // previous and next both clear the active card by the same amount, so
-  // both sides are visible instead of "next" sitting almost on top of it.
-  const KF_OPACITY = [[-2, 0], [-1, .30], [-.4, .95], [0, 1], [.4, .95], [1, .32], [2, 0]];
+  // Opacity holds solid (glass effect intact) only very close to centre,
+  // then falls off steeply - at the exact halfway point between two cards
+  // each would only be ~.5 opacity instead of lingering near .85, so there
+  // is never a stretch of scroll where two cards read as equally "the"
+  // card. X is symmetric - previous and next both clear the active card by
+  // the same amount, so both sides are visible instead of "next" sitting
+  // almost on top of it.
+  const KF_OPACITY = [[-2, 0], [-1, .2], [-.5, .5], [-.2, .92], [0, 1], [.2, .92], [.5, .5], [1, .2], [2, 0]];
   const KF_Z = [[-2, -460], [-1, -210], [0, 120], [1, -190], [2, -460]];
   const KF_ROTATE = [[-2, 58], [-1, 20], [0, 0], [1, -20], [2, -58]];
   const KF_SCALE = [[-2, .72], [-1, .77], [0, 1], [1, .77], [2, .72]];
@@ -265,7 +267,9 @@ services.forEach((s, i) => {
   let displayIndex = 0;
   let lastTime = null;
   let raf = null;
+  let snapTimer = null;
   const EASE_RATE = 4.2; // lower = slower, more deliberate catch-up (matches the bubble's pace)
+  const SNAP_DELAY = 160; // ms of no scrolling before committing to the nearest card
 
   function render(index) {
     const nearest = ((Math.round(index) % n) + n) % n;
@@ -319,6 +323,7 @@ services.forEach((s, i) => {
   function updateTarget() {
     if (!isDesktop()) {
       if (raf) { cancelAnimationFrame(raf); raf = null; lastTime = null; }
+      if (snapTimer) { clearTimeout(snapTimer); snapTimer = null; }
       resetInlineStyles();
       return;
     }
@@ -328,9 +333,18 @@ services.forEach((s, i) => {
     if (reducedMotion) {
       displayIndex = targetIndex;
       render(displayIndex);
-    } else {
-      requestRender();
+      return;
     }
+    requestRender();
+    // While actively scrolling, cards can briefly blend so motion tracks the
+    // gesture smoothly - but the moment scrolling stops, commit to whichever
+    // card is nearest so exactly one card is ever clearly "the" one on
+    // screen, instead of leaving two at similar prominence indefinitely.
+    if (snapTimer) clearTimeout(snapTimer);
+    snapTimer = setTimeout(() => {
+      targetIndex = Math.max(0, Math.min(n - 1, Math.round(targetIndex)));
+      requestRender();
+    }, SNAP_DELAY);
   }
 
   window.addEventListener("scroll", updateTarget, { passive: true });
