@@ -271,7 +271,7 @@ services.forEach((s, i) => {
   const EASE_RATE = 4.2; // lower = slower, more deliberate catch-up (matches the bubble's pace)
   const SNAP_DELAY = 160; // ms of no scrolling before committing to the nearest card
 
-  function render(index) {
+  function render(index, idle) {
     const nearest = ((Math.round(index) % n) + n) % n;
     cards.forEach((card, i) => {
       const d = Math.max(-2, Math.min(2, wrapDistance(i - index)));
@@ -283,6 +283,12 @@ services.forEach((s, i) => {
       card.style.opacity = opacity;
       card.style.transform = `translate(calc(-50% + ${x}%), -50%) translate3d(0,0,${tz}px) rotateY(${rot}deg) scale(${scale})`;
       card.style.zIndex = String(Math.round(100 - Math.abs(d) * 10));
+      // Glass only while at rest - backdrop-filter blur on a card that's
+      // also mid-transform is the single most expensive thing a browser can
+      // be asked to repaint every frame, and it's what actually made this
+      // feel jerky. Solid gradient covers the moving state; the blur only
+      // switches on once a card has fully arrived.
+      card.classList.toggle("service-row--glass", idle && i === nearest);
     });
     dots.forEach((dot, i) => dot.classList.toggle("active", i === nearest));
     counter.textContent = String(nearest + 1).padStart(2, "0");
@@ -304,7 +310,7 @@ services.forEach((s, i) => {
     const ease = 1 - Math.exp(-EASE_RATE * dt);
     displayIndex += (targetIndex - displayIndex) * ease;
     if (Math.abs(targetIndex - displayIndex) < 0.001) displayIndex = targetIndex;
-    render(displayIndex);
+    render(displayIndex, displayIndex === targetIndex);
     if (displayIndex !== targetIndex) {
       raf = requestAnimationFrame(tick);
     } else {
@@ -332,7 +338,7 @@ services.forEach((s, i) => {
     targetIndex = Math.min(n - 1, progress * n);
     if (reducedMotion) {
       displayIndex = targetIndex;
-      render(displayIndex);
+      render(displayIndex, true);
       return;
     }
     requestRender();
@@ -362,7 +368,7 @@ services.forEach((s, i) => {
   window.addEventListener("resize", requestUpdateTarget);
   displayIndex = 0;
   updateTarget();
-  render(displayIndex);
+  render(displayIndex, true);
 })();
 
 /* ---------- Header services dropdown (desktop hover/focus + mobile accordion) ---------- */
