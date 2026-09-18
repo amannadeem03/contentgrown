@@ -280,10 +280,8 @@ services.forEach((s, i) => {
       const rot = interp(KF_ROTATE, d);
       const scale = interp(KF_SCALE, d);
       const x = interp(KF_X, d);
-      const dim = Math.min(1, Math.abs(d));
       card.style.opacity = opacity;
       card.style.transform = `translate(calc(-50% + ${x}%), -50%) translate3d(0,0,${tz}px) rotateY(${rot}deg) scale(${scale})`;
-      card.style.filter = dim < 0.02 ? "none" : `saturate(${1 - dim * .35}) brightness(${1 - dim * .28})`;
       card.style.zIndex = String(Math.round(100 - Math.abs(d) * 10));
     });
     dots.forEach((dot, i) => dot.classList.toggle("active", i === nearest));
@@ -320,7 +318,9 @@ services.forEach((s, i) => {
     raf = requestAnimationFrame(tick);
   }
 
+  let scrollRaf = null;
   function updateTarget() {
+    scrollRaf = null;
     if (!isDesktop()) {
       if (raf) { cancelAnimationFrame(raf); raf = null; lastTime = null; }
       if (snapTimer) { clearTimeout(snapTimer); snapTimer = null; }
@@ -347,8 +347,19 @@ services.forEach((s, i) => {
     }, SNAP_DELAY);
   }
 
-  window.addEventListener("scroll", updateTarget, { passive: true });
-  window.addEventListener("resize", updateTarget);
+  function requestUpdateTarget() {
+    if (scrollRaf) return;
+    scrollRaf = requestAnimationFrame(updateTarget);
+  }
+
+  // Debounced to rAF: the raw "scroll" event can fire dozens of times per
+  // frame during a fast gesture, and updateTarget reads layout (offsetTop/
+  // offsetHeight) - doing that on every single event forces the browser to
+  // recalculate layout far more often than it paints, which is what made
+  // scrolling feel like it was hanging. One layout read per frame, like the
+  // bubble stat bar does, keeps it smooth.
+  window.addEventListener("scroll", requestUpdateTarget, { passive: true });
+  window.addEventListener("resize", requestUpdateTarget);
   displayIndex = 0;
   updateTarget();
   render(displayIndex);
