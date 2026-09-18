@@ -228,21 +228,28 @@ services.forEach((s, i) => {
     return dot;
   });
 
-  // Keyframes for a card's look at integer distance -2..2 from the active
-  // slot (0). Fractional distances interpolate linearly between these,
-  // reproducing the same four looks the old CSS classes had, but smoothly.
-  const KF_D = [-2, -1, 0, 1, 2];
-  const KF_OPACITY = [0, .30, 1, .32, 0];
-  const KF_Z = [-460, -210, 120, -190, -460];
-  const KF_ROTATE = [58, 20, 0, -20, -58];
-  const KF_SCALE = [.72, .77, 1, .77, .72];
-  const KF_X = [0, -103, 0, 3, 0];
+  // Keyframes as [distance, value] pairs, piecewise-linear between them.
+  // Opacity gets extra points around 0 so the active card stays fully
+  // solid (glass effect intact) across most of its dwell range instead of
+  // fading the instant scroll nudges it off-centre. X is now symmetric -
+  // previous and next both clear the active card by the same amount, so
+  // both sides are visible instead of "next" sitting almost on top of it.
+  const KF_OPACITY = [[-2, 0], [-1, .30], [-.4, .95], [0, 1], [.4, .95], [1, .32], [2, 0]];
+  const KF_Z = [[-2, -460], [-1, -210], [0, 120], [1, -190], [2, -460]];
+  const KF_ROTATE = [[-2, 58], [-1, 20], [0, 0], [1, -20], [2, -58]];
+  const KF_SCALE = [[-2, .72], [-1, .77], [0, 1], [1, .77], [2, .72]];
+  const KF_X = [[-2, 0], [-1, -103], [0, 0], [1, 100], [2, 0]];
 
   function interp(points, d) {
-    const t = d + 2;
-    const i0 = Math.max(0, Math.min(3, Math.floor(t)));
-    const frac = t - i0;
-    return points[i0] + (points[i0 + 1] - points[i0]) * frac;
+    if (d <= points[0][0]) return points[0][1];
+    const last = points[points.length - 1];
+    if (d >= last[0]) return last[1];
+    for (let i = 0; i < points.length - 1; i++) {
+      const [d0, v0] = points[i];
+      const [d1, v1] = points[i + 1];
+      if (d >= d0 && d <= d1) return v0 + (v1 - v0) * ((d - d0) / (d1 - d0));
+    }
+    return last[1];
   }
 
   function wrapDistance(d) {
@@ -258,7 +265,7 @@ services.forEach((s, i) => {
   let displayIndex = 0;
   let lastTime = null;
   let raf = null;
-  const EASE_RATE = 10; // higher = snappier settle, no overshoot
+  const EASE_RATE = 4.2; // lower = slower, more deliberate catch-up (matches the bubble's pace)
 
   function render(index) {
     const nearest = ((Math.round(index) % n) + n) % n;

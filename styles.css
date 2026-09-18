@@ -869,7 +869,7 @@ section[id], #top { scroll-margin-top: 110px; }
 .work-portfolio-link a:hover span { transform: translateX(4px); }
 
 /* ---------- Services: stacked scroll carousel ---------- */
-.services { position:relative; height:180vh; padding:0; }
+.services { position:relative; height:340vh; padding:0; }
 .services > .section-inner { position:sticky; top:0; min-height:100vh; padding-top:clamp(74px,10vh,126px); padding-bottom:34px; display:flex; flex-direction:column; justify-content:center; }
 .services-heading { display:flex; align-items:end; justify-content:space-between; gap:24px; margin-bottom:30px; }
 .services-heading h2 { margin:0; }
