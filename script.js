@@ -370,9 +370,6 @@ function setActiveHowStep(index) {
 steps.forEach((s, i) => {
   const el = document.createElement("div");
   el.className = "how-step reveal";
-  el.tabIndex = 0;
-  el.setAttribute("role", "button");
-  el.setAttribute("aria-pressed", "false");
   el.innerHTML = `
     <div class="how-step-num">0${i + 1}</div>
     <div>
@@ -382,15 +379,6 @@ steps.forEach((s, i) => {
   `;
   howSteps.appendChild(el);
   stepEls.push(el);
-  el.addEventListener("mouseenter", () => setActiveHowStep(i));
-  el.addEventListener("focus", () => setActiveHowStep(i));
-  el.addEventListener("click", () => setActiveHowStep(i));
-  el.addEventListener("keydown", event => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      setActiveHowStep(i);
-    }
-  });
 });
 setActiveHowStep(0);
 
