@@ -340,6 +340,17 @@ const howPreviewTitle = document.getElementById("how-preview-title");
 const howPreviewDesc = document.getElementById("how-preview-desc");
 const howPreviewProgress = document.getElementById("how-preview-progress");
 const stepEls = [];
+const howStepBubble = document.createElement("div");
+howStepBubble.className = "how-step-bubble";
+howStepBubble.setAttribute("aria-hidden", "true");
+howSteps.appendChild(howStepBubble);
+
+function positionHowStepBubble(index) {
+  const step = stepEls[index];
+  if (!step) return;
+  howSteps.style.setProperty("--how-bubble-y", `${step.offsetTop}px`);
+  howSteps.style.setProperty("--how-bubble-h", `${step.offsetHeight}px`);
+}
 
 function setActiveHowStep(index) {
   const step = steps[index];
@@ -353,6 +364,7 @@ function setActiveHowStep(index) {
   howPreviewDesc.textContent = step.desc;
   howPreviewProgress.style.width = `${(index + 1) * 25}%`;
   howPreview.dataset.step = String(index + 1);
+  positionHowStepBubble(index);
 }
 
 steps.forEach((s, i) => {
@@ -406,7 +418,10 @@ function requestHowScrollUpdate() {
   howScrollRaf = requestAnimationFrame(updateHowFromScroll);
 }
 window.addEventListener("scroll", requestHowScrollUpdate, { passive: true });
-window.addEventListener("resize", requestHowScrollUpdate);
+window.addEventListener("resize", () => {
+  positionHowStepBubble(scrollHowIndex);
+  requestHowScrollUpdate();
+});
 requestHowScrollUpdate();
 
 /* ---------- Why us ---------- */
