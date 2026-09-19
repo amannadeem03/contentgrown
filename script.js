@@ -189,7 +189,7 @@ filterTabs.forEach(tab => {
 /* ---------- Services ---------- */
 const services = [
   { tag: "Content Production", title: "Video Editing", desc: "Scroll-stopping edits built for stronger pacing, clarity, and retention." },
-  { tag: "Content Production", title: "AI Content Creation", desc: "Concepts and content produced with AI to help you move faster without losing your voice." },
+  { tag: "Content Production", title: "AI Content Creation<br>and Editing", desc: "Concepts and content produced with AI to help you move faster without losing your voice." },
   { tag: "Design & Motion", title: "Graphic Design", desc: "Thumbnails, covers, and visual assets that make your content instantly recognisable." },
   { tag: "Growth & Distribution", title: "Social Media Management", desc: "A dependable content system for planning, publishing, and growing your presence." },
 ];
@@ -201,18 +201,15 @@ services.forEach((s, i) => {
     <div class="service-index">0${i + 1}</div>
     <div class="service-title-wrap">
       <span class="service-tag">${s.tag}</span>
-      <h3 class="${i === 0 ? "service-title-nowrap" : ""}">${s.title}</h3>
+      <h3 class="${i === 0 ? "service-title-nowrap" : i === 1 ? "service-title-ai" : ""}">${s.title}</h3>
     </div>
     <p class="service-desc">${s.desc}</p>
   `;
   servicesList.appendChild(row);
 });
 
-/* Three-card Services carousel: continuously eases toward the scroll-driven
-   card index every frame (same technique as the liquid stat bar below)
-   instead of snapping between four CSS classes on a fixed-duration
-   transition - that's what made it feel stepped/glitchy against fast or
-   slow scrolling instead of tracking the gesture smoothly. */
+/* Services carousel: stable scroll stages with a small dead zone at each
+   boundary, so a resting scroll position cannot make cards flip back/forth. */
 (function () {
   const section = document.getElementById("services");
   const cards = Array.from(document.querySelectorAll(".service-row"));
@@ -228,70 +225,22 @@ services.forEach((s, i) => {
     return dot;
   });
 
-  // Keyframes as [distance, value] pairs, piecewise-linear between them.
-  // Opacity holds solid (glass effect intact) only very close to centre,
-  // then falls off steeply - at the exact halfway point between two cards
-  // each would only be ~.5 opacity instead of lingering near .85, so there
-  // is never a stretch of scroll where two cards read as equally "the"
-  // card. X is symmetric - previous and next both clear the active card by
-  // the same amount, so both sides are visible instead of "next" sitting
-  // almost on top of it.
-  const KF_OPACITY = [[-2, 0], [-1, .2], [-.5, .5], [-.2, .92], [0, 1], [.2, .92], [.5, .5], [1, .2], [2, 0]];
-  const KF_Z = [[-2, -460], [-1, -210], [0, 120], [1, -190], [2, -460]];
-  const KF_ROTATE = [[-2, 58], [-1, 20], [0, 0], [1, -20], [2, -58]];
-  const KF_SCALE = [[-2, .72], [-1, .77], [0, 1], [1, .77], [2, .72]];
-  const KF_X = [[-2, 0], [-1, -103], [0, 0], [1, 100], [2, 0]];
-
-  function interp(points, d) {
-    if (d <= points[0][0]) return points[0][1];
-    const last = points[points.length - 1];
-    if (d >= last[0]) return last[1];
-    for (let i = 0; i < points.length - 1; i++) {
-      const [d0, v0] = points[i];
-      const [d1, v1] = points[i + 1];
-      if (d >= d0 && d <= d1) return v0 + (v1 - v0) * ((d - d0) / (d1 - d0));
-    }
-    return last[1];
-  }
-
-  function wrapDistance(d) {
-    let w = ((d % n) + n) % n;
-    if (w > n / 2) w -= n;
-    return w;
-  }
-
-  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const isDesktop = () => window.innerWidth > 900;
+  const DEAD_ZONE = .035;
+  let activeIndex = 0;
 
-  let targetIndex = 0;
-  let displayIndex = 0;
-  let lastTime = null;
-  let raf = null;
-  let snapTimer = null;
-  const EASE_RATE = 4.2; // lower = slower, more deliberate catch-up (matches the bubble's pace)
-  const SNAP_DELAY = 160; // ms of no scrolling before committing to the nearest card
-
-  function render(index, idle) {
-    const nearest = ((Math.round(index) % n) + n) % n;
+  function render(index) {
     cards.forEach((card, i) => {
-      const d = Math.max(-2, Math.min(2, wrapDistance(i - index)));
-      const opacity = interp(KF_OPACITY, d);
-      const tz = interp(KF_Z, d);
-      const rot = interp(KF_ROTATE, d);
-      const scale = interp(KF_SCALE, d);
-      const x = interp(KF_X, d);
-      card.style.opacity = opacity;
-      card.style.transform = `translate(calc(-50% + ${x}%), -50%) translate3d(0,0,${tz}px) rotateY(${rot}deg) scale(${scale})`;
-      card.style.zIndex = String(Math.round(100 - Math.abs(d) * 10));
-      // Glass only while at rest - backdrop-filter blur on a card that's
-      // also mid-transform is the single most expensive thing a browser can
-      // be asked to repaint every frame, and it's what actually made this
-      // feel jerky. Solid gradient covers the moving state; the blur only
-      // switches on once a card has fully arrived.
-      card.classList.toggle("service-row--glass", idle && i === nearest);
+      card.style.opacity = "";
+      card.style.transform = "";
+      card.style.zIndex = "";
+      card.classList.toggle("active", i === index);
+      card.classList.toggle("previous", i === index - 1);
+      card.classList.toggle("next", i === index + 1);
+      card.classList.toggle("service-row--glass", i === index);
     });
-    dots.forEach((dot, i) => dot.classList.toggle("active", i === nearest));
-    counter.textContent = String(nearest + 1).padStart(2, "0");
+    dots.forEach((dot, i) => dot.classList.toggle("active", i === index));
+    counter.textContent = String(index + 1).padStart(2, "0");
   }
 
   function resetInlineStyles() {
@@ -303,54 +252,18 @@ services.forEach((s, i) => {
     });
   }
 
-  function tick(time) {
-    if (lastTime === null) lastTime = time;
-    const dt = Math.min(0.05, (time - lastTime) / 1000);
-    lastTime = time;
-    const ease = 1 - Math.exp(-EASE_RATE * dt);
-    displayIndex += (targetIndex - displayIndex) * ease;
-    if (Math.abs(targetIndex - displayIndex) < 0.001) displayIndex = targetIndex;
-    render(displayIndex, displayIndex === targetIndex);
-    if (displayIndex !== targetIndex) {
-      raf = requestAnimationFrame(tick);
-    } else {
-      raf = null;
-      lastTime = null;
-    }
-  }
-
-  function requestRender() {
-    if (raf) return;
-    raf = requestAnimationFrame(tick);
-  }
-
   let scrollRaf = null;
   function updateTarget() {
     scrollRaf = null;
     if (!isDesktop()) {
-      if (raf) { cancelAnimationFrame(raf); raf = null; lastTime = null; }
-      if (snapTimer) { clearTimeout(snapTimer); snapTimer = null; }
       resetInlineStyles();
       return;
     }
     const distance = section.offsetHeight - window.innerHeight;
     const progress = distance > 0 ? Math.max(0, Math.min(1, (window.scrollY - section.offsetTop) / distance)) : 0;
-    targetIndex = Math.min(n - 1, progress * n);
-    if (reducedMotion) {
-      displayIndex = targetIndex;
-      render(displayIndex, true);
-      return;
-    }
-    requestRender();
-    // While actively scrolling, cards can briefly blend so motion tracks the
-    // gesture smoothly - but the moment scrolling stops, commit to whichever
-    // card is nearest so exactly one card is ever clearly "the" one on
-    // screen, instead of leaving two at similar prominence indefinitely.
-    if (snapTimer) clearTimeout(snapTimer);
-    snapTimer = setTimeout(() => {
-      targetIndex = Math.max(0, Math.min(n - 1, Math.round(targetIndex)));
-      requestRender();
-    }, SNAP_DELAY);
+    while (activeIndex < n - 1 && progress >= ((activeIndex + 1) / n) + DEAD_ZONE) activeIndex++;
+    while (activeIndex > 0 && progress < (activeIndex / n) - DEAD_ZONE) activeIndex--;
+    render(activeIndex);
   }
 
   function requestUpdateTarget() {
@@ -358,17 +271,10 @@ services.forEach((s, i) => {
     scrollRaf = requestAnimationFrame(updateTarget);
   }
 
-  // Debounced to rAF: the raw "scroll" event can fire dozens of times per
-  // frame during a fast gesture, and updateTarget reads layout (offsetTop/
-  // offsetHeight) - doing that on every single event forces the browser to
-  // recalculate layout far more often than it paints, which is what made
-  // scrolling feel like it was hanging. One layout read per frame, like the
-  // bubble stat bar does, keeps it smooth.
   window.addEventListener("scroll", requestUpdateTarget, { passive: true });
   window.addEventListener("resize", requestUpdateTarget);
-  displayIndex = 0;
+  render(activeIndex);
   updateTarget();
-  render(displayIndex, true);
 })();
 
 /* ---------- Header services dropdown (desktop hover/focus + mobile accordion) ---------- */
