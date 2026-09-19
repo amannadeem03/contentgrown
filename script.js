@@ -333,9 +333,34 @@ const steps = [
   { title: "Scale", desc: "Volume goes up, quality doesn't move. Adding formats or doubling output doesn't mean re-briefing a new editor every time." },
 ];
 const howSteps = document.getElementById("how-steps");
+const howPreview = document.getElementById("how-preview");
+const howPreviewCount = document.getElementById("how-preview-count");
+const howPreviewKicker = document.getElementById("how-preview-kicker");
+const howPreviewTitle = document.getElementById("how-preview-title");
+const howPreviewDesc = document.getElementById("how-preview-desc");
+const howPreviewProgress = document.getElementById("how-preview-progress");
+const stepEls = [];
+
+function setActiveHowStep(index) {
+  const step = steps[index];
+  stepEls.forEach((el, i) => {
+    el.classList.toggle("active", i === index);
+    el.setAttribute("aria-pressed", String(i === index));
+  });
+  howPreviewCount.textContent = `0${index + 1} / 04`;
+  howPreviewKicker.textContent = `STEP 0${index + 1}`;
+  howPreviewTitle.textContent = step.title;
+  howPreviewDesc.textContent = step.desc;
+  howPreviewProgress.style.width = `${(index + 1) * 25}%`;
+  howPreview.dataset.step = String(index + 1);
+}
+
 steps.forEach((s, i) => {
   const el = document.createElement("div");
   el.className = "how-step reveal";
+  el.tabIndex = 0;
+  el.setAttribute("role", "button");
+  el.setAttribute("aria-pressed", "false");
   el.innerHTML = `
     <div class="how-step-num">0${i + 1}</div>
     <div>
@@ -344,7 +369,18 @@ steps.forEach((s, i) => {
     </div>
   `;
   howSteps.appendChild(el);
+  stepEls.push(el);
+  el.addEventListener("mouseenter", () => setActiveHowStep(i));
+  el.addEventListener("focus", () => setActiveHowStep(i));
+  el.addEventListener("click", () => setActiveHowStep(i));
+  el.addEventListener("keydown", event => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      setActiveHowStep(i);
+    }
+  });
 });
+setActiveHowStep(0);
 
 /* ---------- Why us ---------- */
 const whyItems = [
