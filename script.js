@@ -382,6 +382,33 @@ steps.forEach((s, i) => {
 });
 setActiveHowStep(0);
 
+// Scroll through the process one deliberate stage at a time while this
+// section is pinned, matching the stable staged behaviour of the services
+// carousel without hijacking the user's wheel input.
+const howSection = document.getElementById("how");
+let howScrollRaf = null;
+let scrollHowIndex = 0;
+function updateHowFromScroll() {
+  howScrollRaf = null;
+  if (window.innerWidth <= 900) return;
+  const distance = howSection.offsetHeight - window.innerHeight;
+  const progress = distance > 0
+    ? Math.max(0, Math.min(1, (window.scrollY - howSection.offsetTop) / distance))
+    : 0;
+  const nextIndex = Math.min(steps.length - 1, Math.floor(progress * steps.length));
+  if (nextIndex !== scrollHowIndex) {
+    scrollHowIndex = nextIndex;
+    setActiveHowStep(nextIndex);
+  }
+}
+function requestHowScrollUpdate() {
+  if (howScrollRaf) return;
+  howScrollRaf = requestAnimationFrame(updateHowFromScroll);
+}
+window.addEventListener("scroll", requestHowScrollUpdate, { passive: true });
+window.addEventListener("resize", requestHowScrollUpdate);
+requestHowScrollUpdate();
+
 /* ---------- Why us ---------- */
 const whyItems = [
   { title: "A Dedicated Team, Not a Rotating Freelancer", desc: "You're not resubmitting your brand guidelines every month. The same team edits your content, learns your style, and gets faster at it over time." },

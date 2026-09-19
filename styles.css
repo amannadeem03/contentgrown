@@ -942,6 +942,11 @@ section[id], #top { scroll-margin-top: 110px; }
 .how-preview p { max-width:385px; color:rgba(247,246,243,.6); font-size:.94rem; line-height:1.55; }
 .how-preview-progress { position:absolute; right:30px; bottom:29px; left:30px; height:2px; background:rgba(255,255,255,.14); overflow:hidden; }
 .how-preview-progress span { display:block; width:25%; height:100%; background:var(--amber); box-shadow:0 0 12px rgba(248,98,21,.8); transition:width .42s var(--ease-soft); }
+@media (min-width: 901px) {
+  .how { min-height:230vh; padding:0; }
+  .how-grid { position:sticky; top:0; min-height:100vh; align-content:center; }
+  .how-preview { position:relative; top:auto; }
+}
 
 /* ---------- Why ---------- */
 .why { padding: 80px 0; }
