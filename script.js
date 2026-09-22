@@ -129,6 +129,12 @@ const workGrid = document.getElementById("work-grid");
 let activeWorkFilter = "all";
 workItems.forEach((item) => {
   const src = `${PORTFOLIO_BASE}${item.file}`;
+  // The grid only ever shows these at thumbnail size, so the on-hover
+  // preview plays a small muted proxy (640px wide, no audio) instead of
+  // the full 1080p file - that's what was making hover playback take ages
+  // to start. Clicking through to the lightbox still loads the real,
+  // full-quality clip via `src`.
+  const gridSrc = src.replace(/\.mp4$/, "-grid.mp4");
   const posterName = item.file.split("/").pop().replace(/\.mp4$/, ".jpg");
   const poster = `${PORTFOLIO_BASE}posters/${posterName}`;
   const card = document.createElement("div");
@@ -144,7 +150,7 @@ workItems.forEach((item) => {
   }
   card.innerHTML = `
     <video muted loop playsinline preload="metadata" poster="${poster}">
-      <source src="${src}" type="video/mp4">
+      <source src="${gridSrc}" type="video/mp4">
     </video>
     <span class="work-card-tag">${item.label}</span>
   `;
