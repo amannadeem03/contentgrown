@@ -118,8 +118,11 @@ const workItems = [
   { cats: ["short"], label: "Short-Form", file: "shortform/video-6.mp4" },
   { cats: ["short"], label: "Short-Form", file: "shortform/video-7.mp4", hideFromAll: true },
   { cats: ["short"], label: "Short-Form", file: "shortform/video-8.mp4" },
-  { cats: ["long", "vlogs"], label: "Vlogs", file: "vlogs/betting-vlog-preview.mp4" },
-  { cats: ["long", "vlogs"], label: "Vlogs", file: "vlogs/vlog-01-preview.mp4" },
+  { cats: ["vlogs"], label: "Vlogs", file: "vlogs/betting-vlog-preview.mp4" },
+  { cats: ["vlogs"], label: "Vlogs", file: "vlogs/vlog-01-preview.mp4" },
+  { cats: ["long"], label: "Long-Form", file: "longform/long-form-1.mp4" },
+  { cats: ["long"], label: "Long-Form", file: "longform/long-form-2.mp4" },
+  { cats: ["long"], label: "Long-Form", file: "longform/long-form-3.mp4" },
 ];
 
 const workGrid = document.getElementById("work-grid");
