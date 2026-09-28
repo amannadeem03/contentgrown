@@ -475,21 +475,6 @@ function renderPricing(tier) {
 pricingToggleOptions.forEach(option => option.addEventListener("click", () => renderPricing(option.dataset.tier)));
 renderPricing("standard");
 
-/* ---------- Why us ---------- */
-const whyItems = [
-  { title: "A Dedicated Team, Not a Rotating Freelancer", desc: "You're not resubmitting your brand guidelines every month. The same team edits your content, learns your style, and gets faster at it over time." },
-  { title: "Consistency You Can Actually Plan Around", desc: "Same quality, same style, same turnaround — video after video. That's the difference between content that compounds and content that stalls." },
-  { title: "Turnaround That Holds Under Volume", desc: "24–48 hours on short-form. Capacity for 300+ short-form videos a month. Your schedule doesn't slip because we got busy." },
-  { title: "Built to Scale With You", desc: "Going from 8 videos a month to 40 shouldn't mean rebuilding your whole content process. With us, it doesn't." },
-];
-const whyGrid = document.getElementById("why-grid");
-whyItems.forEach(w => {
-  const el = document.createElement("div");
-  el.className = "why-card reveal";
-  el.innerHTML = `<h3>${w.title}</h3><p>${w.desc}</p>`;
-  whyGrid.appendChild(el);
-});
-
 /* ---------- Proof / testimonials ---------- */
 const videoTestimonials = [
   { name: "Aaron", file: "assets/testimonials/videos/aaron-testimonial.mp4" },
