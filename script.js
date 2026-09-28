@@ -421,6 +421,60 @@ window.addEventListener("resize", () => {
 });
 requestHowScrollUpdate();
 
+/* ---------- Pricing packages ---------- */
+const pricingPlans = {
+  standard: {
+    label: "Standard Editing",
+    intro: "For polished, retention-focused short-form content.",
+    plans: [
+      { name: "Starter", videos: 5, perVideo: 70, total: 350, best: "Ideal for getting a reliable content rhythm in place.", features: ["Up to 90 seconds per video", "Professional captions, B-roll, music & sound design", "Colour correction and basic motion graphics", "2 rounds of revisions per video", "48–72 hour turnaround per video", "Frame.io feedback included"] },
+      { name: "Growth", videos: 10, perVideo: 60, total: 600, badge: "Most Popular", best: "Best for creators and brands publishing every week.", features: ["Up to 90 seconds per video", "Professional captions, B-roll, music & sound design", "Colour correction and basic motion graphics", "2 rounds of revisions per video", "48–72 hour turnaround per video", "Frame.io feedback included"] },
+      { name: "Scale", videos: 20, perVideo: 50, total: 1000, badge: "Best Value", best: "Built for consistent, high-volume content engines.", features: ["Up to 90 seconds per video", "Professional captions, B-roll, music & sound design", "Colour correction and basic motion graphics", "2 rounds of revisions per video", "48–72 hour turnaround per video", "Frame.io feedback included"] },
+    ],
+  },
+  advanced: {
+    label: "Advanced Editing",
+    intro: "For content requiring deeper production and visual work.",
+    plans: [
+      { name: "Starter", videos: 5, perVideo: 100, total: 500, best: "Ideal for elevated content with a stronger visual story.", features: ["Up to 90 seconds per video", "Detailed motion graphics & custom visual elements", "Advanced animation, masking & compositing", "Detailed sound design and retention editing", "2 rounds of revisions per video", "Frame.io feedback included"] },
+      { name: "Growth", videos: 10, perVideo: 90, total: 900, badge: "Most Popular", best: "Best for brands producing premium content every week.", features: ["Up to 90 seconds per video", "Detailed motion graphics & custom visual elements", "Advanced animation, masking & compositing", "Detailed sound design and retention editing", "2 rounds of revisions per video", "Frame.io feedback included"] },
+      { name: "Scale", videos: 20, perVideo: 80, total: 1600, badge: "Best Value", best: "Made for serious output with premium production value.", features: ["Up to 90 seconds per video", "Detailed motion graphics & custom visual elements", "Advanced animation, masking & compositing", "Detailed sound design and retention editing", "2 rounds of revisions per video", "Frame.io feedback included"] },
+    ],
+  },
+};
+
+const pricingGrid = document.getElementById("pricing-grid");
+const pricingToggleOptions = Array.from(document.querySelectorAll(".pricing-toggle-option"));
+function renderPricing(tier) {
+  const { label, intro, plans } = pricingPlans[tier];
+  pricingGrid.innerHTML = plans.map(plan => `
+    <article class="pricing-card ${plan.badge ? "pricing-card--featured" : ""}">
+      <div class="pricing-card-topline">
+        <span>${label}</span>
+        ${plan.badge ? `<span class="pricing-badge">${plan.badge}</span>` : ""}
+      </div>
+      <h3>${plan.name}</h3>
+      <p class="pricing-videos">${plan.videos} video package</p>
+      <div class="pricing-price"><strong>$${plan.perVideo}</strong><span>/ video</span></div>
+      <div class="pricing-total"><span>Total package</span><strong>$${plan.total.toLocaleString()}</strong></div>
+      <p class="pricing-best">${plan.best}</p>
+      <p class="pricing-includes-title">Includes</p>
+      <ul class="pricing-features">${plan.features.map(feature => `<li>${feature}</li>`).join("")}</ul>
+      <div class="pricing-actions">
+        <a class="btn ${plan.badge ? "btn-solid btn-glass" : "btn-glass"}" href="#book">Get Started</a>
+        <a class="pricing-call-link" href="#book">Book a Call <span aria-hidden="true">→</span></a>
+      </div>
+    </article>`).join("");
+  pricingGrid.dataset.tier = tier;
+  pricingToggleOptions.forEach(option => {
+    const active = option.dataset.tier === tier;
+    option.classList.toggle("active", active);
+    option.setAttribute("aria-selected", String(active));
+  });
+}
+pricingToggleOptions.forEach(option => option.addEventListener("click", () => renderPricing(option.dataset.tier)));
+renderPricing("standard");
+
 /* ---------- Why us ---------- */
 const whyItems = [
   { title: "A Dedicated Team, Not a Rotating Freelancer", desc: "You're not resubmitting your brand guidelines every month. The same team edits your content, learns your style, and gets faster at it over time." },
