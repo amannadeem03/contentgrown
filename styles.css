@@ -104,6 +104,11 @@ p { line-height: 1.68; }
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* Own compositing layer so scrolling the page above it doesn't stall or
+     repaint the video. */
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 .aurora {

@@ -1,9 +1,19 @@
 /* ---------- Smooth hero background video loop ---------- */
+const heroVideoObserver = new IntersectionObserver((entries) => {
+  entries.forEach((entry) => {
+    const v = entry.target;
+    if (entry.isIntersecting) v.play().catch(() => {});
+    else v.pause();
+  });
+}, { threshold: 0 });
 document.querySelectorAll(".hero-loop").forEach((v) => {
   v.addEventListener("ended", () => {
     v.currentTime = 0;
     v.play().catch(() => {});
   });
+  // Only decode the hero clips while the hero is on screen - four videos
+  // playing out of sight were competing with the background for decoders.
+  heroVideoObserver.observe(v);
 });
 
 /* ---------- Site background video: gapless relay loop, plays forever ----------
@@ -64,6 +74,27 @@ document.querySelectorAll(".hero-loop").forEach((v) => {
     els[0].addEventListener("loadeddata", () => loop(), { once: true });
   }
   setInterval(check, 100);
+
+  // Stall watchdog: if the playing copy is "playing" but its clock has not
+  // moved (browser starved it of a decoder or frame while scrolling), kick
+  // it. First a plain play(), then a tiny seek if it is still stuck.
+  let lastT = -1, lastWall = performance.now(), stuckFor = 0;
+  setInterval(() => {
+    const v = els[cur];
+    if (!v.duration || handing) { lastT = v.currentTime; lastWall = performance.now(); stuckFor = 0; return; }
+    const now = performance.now();
+    if (!v.paused && Math.abs(v.currentTime - lastT) < 0.01) {
+      stuckFor += now - lastWall;
+      if (stuckFor > 700) {
+        v.play().catch(() => {});
+        if (stuckFor > 1500) { try { v.currentTime = Math.min(v.duration - 0.5, v.currentTime + 0.05); } catch (e) {} stuckFor = 700; }
+      }
+    } else {
+      stuckFor = 0;
+    }
+    lastT = v.currentTime;
+    lastWall = now;
+  }, 250);
   setInterval(() => safePlay(els[cur]), 1500);
 
   const resume = () => safePlay(els[cur]);
