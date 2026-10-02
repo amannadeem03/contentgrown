@@ -6,19 +6,64 @@ document.querySelectorAll(".hero-loop").forEach((v) => {
   });
 });
 
-/* ---------- Site background video: plays as-is, native loop, never stops ---------- */
+/* ---------- Site background video: gapless relay loop, plays forever ----------
+   The clip has a dissolve baked into its end, so its last frame equals its
+   first. Two identical elements take turns: the standby one is already
+   decoded at 0:00 and starts a moment before the active one finishes, then
+   is brought to the front - no seek, no gap, no fade, no colour change. */
 (function () {
-  const v = document.getElementById("bg-fixed-video");
-  if (!v) return;
-  v.muted = true;
-  const play = () => { if (v.paused) v.play().catch(() => {}); };
-  ["pause", "stalled", "suspend", "waiting", "ended", "canplay"].forEach((e) => v.addEventListener(e, play));
-  document.addEventListener("visibilitychange", play);
-  window.addEventListener("focus", play);
-  window.addEventListener("pageshow", play);
-  ["click", "touchstart", "scroll", "keydown"].forEach((e) => window.addEventListener(e, play, { passive: true, once: true }));
-  setInterval(play, 2000);
-  play();
+  const els = [document.getElementById("bg-fixed-video-a"), document.getElementById("bg-fixed-video-b")];
+  if (!els[0] || !els[1]) return;
+  const HAND = 0.35; // seconds before the end to start the standby clip
+  let cur = 0;
+  let handing = false;
+
+  els.forEach((v) => { v.muted = true; v.loop = true; });
+  els[0].style.zIndex = 2;
+  els[1].style.zIndex = 1;
+
+  const safePlay = (v) => { if (v.paused) v.play().catch(() => {}); };
+
+  function swap() {
+    const A = els[cur], B = els[1 - cur];
+    B.style.zIndex = 2;
+    A.style.zIndex = 1;
+    A.pause();
+    try { A.currentTime = 0; } catch (e) {}
+    cur = 1 - cur;
+    handing = false;
+  }
+
+  function check() {
+    const A = els[cur], B = els[1 - cur];
+    if (!A.duration) return;
+    if (A.paused) safePlay(A);
+    if (!handing && A.currentTime >= A.duration - HAND) {
+      handing = true;
+      try { B.currentTime = 0; } catch (e) {}
+      B.play().catch(() => {});
+      if (B.requestVideoFrameCallback) B.requestVideoFrameCallback(swap);
+      else setTimeout(swap, 120);
+      // if the frame callback never fires (throttled tab), don't stay stuck
+      setTimeout(() => { if (handing) swap(); }, 1500);
+    }
+  }
+
+  if (els[0].requestVideoFrameCallback) {
+    const loop = () => { check(); els[cur].requestVideoFrameCallback(loop); };
+    els[0].addEventListener("loadeddata", () => loop(), { once: true });
+  }
+  setInterval(check, 100);
+  setInterval(() => safePlay(els[cur]), 1500);
+
+  const resume = () => safePlay(els[cur]);
+  document.addEventListener("visibilitychange", resume);
+  window.addEventListener("focus", resume);
+  window.addEventListener("pageshow", resume);
+  ["click", "touchstart", "scroll", "keydown"].forEach((e) => window.addEventListener(e, resume, { passive: true, once: true }));
+  els.forEach((v) => ["pause", "stalled", "suspend", "waiting"].forEach((e) => v.addEventListener(e, () => { if (v === els[cur]) resume(); })));
+  safePlay(els[0]);
+  els[1].pause();
 })();
 
 /* ---------- Center the hero rule above “Fast turnaround” ---------- */
