@@ -16,95 +16,41 @@ document.querySelectorAll(".hero-loop").forEach((v) => {
   heroVideoObserver.observe(v);
 });
 
-/* ---------- Site background video: gapless relay loop, plays forever ----------
-   The clip has a dissolve baked into its end, so its last frame equals its
-   first. Two identical elements take turns: the standby one is already
-   decoded at 0:00 and starts a moment before the active one finishes, then
-   is brought to the front - no seek, no gap, no fade, no colour change. */
+/* ---------- Site background video: crossfaded loop, always smooth ---------- */
 (function () {
-  const els = [document.getElementById("bg-fixed-video-a"), document.getElementById("bg-fixed-video-b")];
-  if (!els[0] || !els[1]) return;
-  const HAND = 0.35; // seconds before the end to start the standby clip
-  let cur = 0;
-  let handing = false;
+  const a = document.getElementById("bg-fixed-video-a");
+  const b = document.getElementById("bg-fixed-video-b");
+  if (!a || !b) return;
+  const speed = 1;
 
-  // Serve a version sized to the screen. A 4K video on a laptop-sized screen
-  // is decoded in full and then shrunk, which is what made it stutter and
-  // look blocky; 1080p is the default and larger files only load on screens
-  // that can actually show the extra detail.
-  const physicalWidth = Math.max(screen.width, window.innerWidth) * (window.devicePixelRatio || 1);
-  const file = physicalWidth >= 2200 ? "assets/site-bg-1440.mp4" : "assets/site-bg-1080.mp4";
-  els.forEach((v) => {
-    v.muted = true;
-    v.loop = true;
-    if (!v.src.endsWith(file)) v.src = file;
+  function whenReady(video) {
+    return new Promise((resolve) => {
+      if (video.readyState >= 1 && video.duration) resolve();
+      else video.addEventListener("loadedmetadata", () => resolve(), { once: true });
+    });
+  }
+
+  function crossfade(video) {
+    const dur = video.duration;
+    if (!dur) return 1;
+    const phase = (video.currentTime / dur) * 2 * Math.PI;
+    return (1 - Math.cos(phase)) / 2;
+  }
+
+  function tick() {
+    a.style.opacity = crossfade(a);
+    b.style.opacity = crossfade(b);
+    requestAnimationFrame(tick);
+  }
+
+  Promise.all([whenReady(a), whenReady(b)]).then(() => {
+    a.playbackRate = speed;
+    b.playbackRate = speed;
+    try { b.currentTime = a.duration / 2; } catch (e) {}
+    a.play().catch(() => {});
+    b.play().catch(() => {});
+    requestAnimationFrame(tick);
   });
-  els[0].style.zIndex = 2;
-  els[1].style.zIndex = 1;
-
-  const safePlay = (v) => { if (v.paused) v.play().catch(() => {}); };
-
-  function swap() {
-    const A = els[cur], B = els[1 - cur];
-    B.style.zIndex = 2;
-    A.style.zIndex = 1;
-    A.pause();
-    try { A.currentTime = 0; } catch (e) {}
-    cur = 1 - cur;
-    handing = false;
-  }
-
-  function check() {
-    const A = els[cur], B = els[1 - cur];
-    if (!A.duration) return;
-    if (A.paused) safePlay(A);
-    if (!handing && A.currentTime >= A.duration - HAND) {
-      handing = true;
-      try { B.currentTime = 0; } catch (e) {}
-      B.play().catch(() => {});
-      if (B.requestVideoFrameCallback) B.requestVideoFrameCallback(swap);
-      else setTimeout(swap, 120);
-      // if the frame callback never fires (throttled tab), don't stay stuck
-      setTimeout(() => { if (handing) swap(); }, 1500);
-    }
-  }
-
-  if (els[0].requestVideoFrameCallback) {
-    const loop = () => { check(); els[cur].requestVideoFrameCallback(loop); };
-    els[0].addEventListener("loadeddata", () => loop(), { once: true });
-  }
-  setInterval(check, 100);
-
-  // Stall watchdog: if the playing copy is "playing" but its clock has not
-  // moved (browser starved it of a decoder or frame while scrolling), kick
-  // it. First a plain play(), then a tiny seek if it is still stuck.
-  let lastT = -1, lastWall = performance.now(), stuckFor = 0;
-  setInterval(() => {
-    const v = els[cur];
-    if (!v.duration || handing) { lastT = v.currentTime; lastWall = performance.now(); stuckFor = 0; return; }
-    const now = performance.now();
-    if (!v.paused && Math.abs(v.currentTime - lastT) < 0.01) {
-      stuckFor += now - lastWall;
-      if (stuckFor > 700) {
-        v.play().catch(() => {});
-        if (stuckFor > 1500) { try { v.currentTime = Math.min(v.duration - 0.5, v.currentTime + 0.05); } catch (e) {} stuckFor = 700; }
-      }
-    } else {
-      stuckFor = 0;
-    }
-    lastT = v.currentTime;
-    lastWall = now;
-  }, 250);
-  setInterval(() => safePlay(els[cur]), 1500);
-
-  const resume = () => safePlay(els[cur]);
-  document.addEventListener("visibilitychange", resume);
-  window.addEventListener("focus", resume);
-  window.addEventListener("pageshow", resume);
-  ["click", "touchstart", "scroll", "keydown"].forEach((e) => window.addEventListener(e, resume, { passive: true, once: true }));
-  els.forEach((v) => ["pause", "stalled", "suspend", "waiting"].forEach((e) => v.addEventListener(e, () => { if (v === els[cur]) resume(); })));
-  safePlay(els[0]);
-  els[1].pause();
 })();
 
 /* ---------- Center the hero rule above “Fast turnaround” ---------- */
