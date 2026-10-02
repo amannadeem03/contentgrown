@@ -6,41 +6,19 @@ document.querySelectorAll(".hero-loop").forEach((v) => {
   });
 });
 
-/* ---------- Site background video: crossfaded loop, always smooth ---------- */
+/* ---------- Site background video: plays as-is, native loop, never stops ---------- */
 (function () {
-  const a = document.getElementById("bg-fixed-video-a");
-  const b = document.getElementById("bg-fixed-video-b");
-  if (!a || !b) return;
-  const speed = 1;
-
-  function whenReady(video) {
-    return new Promise((resolve) => {
-      if (video.readyState >= 1 && video.duration) resolve();
-      else video.addEventListener("loadedmetadata", () => resolve(), { once: true });
-    });
-  }
-
-  function crossfade(video) {
-    const dur = video.duration;
-    if (!dur) return 1;
-    const phase = (video.currentTime / dur) * 2 * Math.PI;
-    return (1 - Math.cos(phase)) / 2;
-  }
-
-  function tick() {
-    a.style.opacity = crossfade(a);
-    b.style.opacity = crossfade(b);
-    requestAnimationFrame(tick);
-  }
-
-  Promise.all([whenReady(a), whenReady(b)]).then(() => {
-    a.playbackRate = speed;
-    b.playbackRate = speed;
-    try { b.currentTime = a.duration / 2; } catch (e) {}
-    a.play().catch(() => {});
-    b.play().catch(() => {});
-    requestAnimationFrame(tick);
-  });
+  const v = document.getElementById("bg-fixed-video");
+  if (!v) return;
+  v.muted = true;
+  const play = () => { if (v.paused) v.play().catch(() => {}); };
+  ["pause", "stalled", "suspend", "waiting", "ended", "canplay"].forEach((e) => v.addEventListener(e, play));
+  document.addEventListener("visibilitychange", play);
+  window.addEventListener("focus", play);
+  window.addEventListener("pageshow", play);
+  ["click", "touchstart", "scroll", "keydown"].forEach((e) => window.addEventListener(e, play, { passive: true, once: true }));
+  setInterval(play, 2000);
+  play();
 })();
 
 /* ---------- Center the hero rule above “Fast turnaround” ---------- */
