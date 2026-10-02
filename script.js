@@ -437,18 +437,18 @@ const pricingPlans = {
     label: "Standard Editing",
     intro: "For polished, retention-focused short-form content.",
     plans: [
-      { name: "Starter", videos: 5, perVideo: 70, total: 350, best: "Ideal for getting a reliable content rhythm in place.", features: ["Up to 90 seconds per video", "Professional captions, B-roll, music & sound design", "Colour correction and basic motion graphics", "2 rounds of revisions per video", "48–72 hour turnaround per video", "Frame.io feedback included"] },
-      { name: "Growth", videos: 10, perVideo: 60, total: 600, badge: "Most Popular", best: "Best for creators and brands publishing every week.", features: ["Up to 90 seconds per video", "Professional captions, B-roll, music & sound design", "Colour correction and basic motion graphics", "2 rounds of revisions per video", "48–72 hour turnaround per video", "Frame.io feedback included"] },
-      { name: "Scale", videos: 20, perVideo: 50, total: 1000, badge: "Best Value", best: "Built for consistent, high-volume content engines.", features: ["Up to 90 seconds per video", "Professional captions, B-roll, music & sound design", "Colour correction and basic motion graphics", "2 rounds of revisions per video", "48–72 hour turnaround per video", "Frame.io feedback included"] },
+      { name: "Starter", videos: 5, perVideo: 70, total: 350, best: "Ideal for getting a reliable content rhythm in place.", features: ["Up to 90 seconds per video", "Professional captions, B-roll, music & sound design", "2 rounds of revisions per video", "48–72 hour turnaround per video"] },
+      { name: "Growth", videos: 10, perVideo: 60, total: 600, badge: "Most Popular", best: "Best for creators and brands publishing every week.", features: ["Up to 90 seconds per video", "Professional captions, B-roll, music & sound design", "2 rounds of revisions per video", "48–72 hour turnaround per video"] },
+      { name: "Scale", videos: 20, perVideo: 50, total: 1000, badge: "Best Value", best: "Built for consistent, high-volume content engines.", features: ["Up to 90 seconds per video", "Professional captions, B-roll, music & sound design", "2 rounds of revisions per video", "48–72 hour turnaround per video"] },
     ],
   },
   advanced: {
     label: "Advanced Editing",
     intro: "For content requiring deeper production and visual work.",
     plans: [
-      { name: "Starter", videos: 5, perVideo: 100, total: 500, best: "Ideal for elevated content with a stronger visual story.", features: ["Up to 90 seconds per video", "Detailed motion graphics & custom visual elements", "Advanced animation, masking & compositing", "Detailed sound design and retention editing", "2 rounds of revisions per video", "Frame.io feedback included"] },
-      { name: "Growth", videos: 10, perVideo: 90, total: 900, badge: "Most Popular", best: "Best for brands producing premium content every week.", features: ["Up to 90 seconds per video", "Detailed motion graphics & custom visual elements", "Advanced animation, masking & compositing", "Detailed sound design and retention editing", "2 rounds of revisions per video", "Frame.io feedback included"] },
-      { name: "Scale", videos: 20, perVideo: 80, total: 1600, badge: "Best Value", best: "Made for serious output with premium production value.", features: ["Up to 90 seconds per video", "Detailed motion graphics & custom visual elements", "Advanced animation, masking & compositing", "Detailed sound design and retention editing", "2 rounds of revisions per video", "Frame.io feedback included"] },
+      { name: "Starter", videos: 5, perVideo: 100, total: 500, best: "Ideal for elevated content with a stronger visual story.", features: ["Up to 90 seconds per video", "Detailed motion graphics & custom visual elements", "Advanced animation, masking & compositing", "Detailed sound design and retention editing", "2 rounds of revisions per video"] },
+      { name: "Growth", videos: 10, perVideo: 90, total: 900, badge: "Most Popular", best: "Best for brands producing premium content every week.", features: ["Up to 90 seconds per video", "Detailed motion graphics & custom visual elements", "Advanced animation, masking & compositing", "Detailed sound design and retention editing", "2 rounds of revisions per video"] },
+      { name: "Scale", videos: 20, perVideo: 80, total: 1600, badge: "Best Value", best: "Made for serious output with premium production value.", features: ["Up to 90 seconds per video", "Detailed motion graphics & custom visual elements", "Advanced animation, masking & compositing", "Detailed sound design and retention editing", "2 rounds of revisions per video"] },
     ],
   },
 };
