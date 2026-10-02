@@ -18,7 +18,17 @@ document.querySelectorAll(".hero-loop").forEach((v) => {
   let cur = 0;
   let handing = false;
 
-  els.forEach((v) => { v.muted = true; v.loop = true; });
+  // Serve a version sized to the screen. A 4K video on a laptop-sized screen
+  // is decoded in full and then shrunk, which is what made it stutter and
+  // look blocky; 1080p is the default and larger files only load on screens
+  // that can actually show the extra detail.
+  const physicalWidth = Math.max(screen.width, window.innerWidth) * (window.devicePixelRatio || 1);
+  const file = physicalWidth >= 2200 ? "assets/site-bg-1440.mp4" : "assets/site-bg-1080.mp4";
+  els.forEach((v) => {
+    v.muted = true;
+    v.loop = true;
+    if (!v.src.endsWith(file)) v.src = file;
+  });
   els[0].style.zIndex = 2;
   els[1].style.zIndex = 1;
 
