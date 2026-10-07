@@ -2,7 +2,7 @@
 const heroVideoObserver = new IntersectionObserver((entries) => {
   entries.forEach((entry) => {
     const v = entry.target;
-    if (entry.isIntersecting) v.play().catch(() => {});
+    if (entry.isIntersecting && !document.body.classList.contains("vsl-playing")) v.play().catch(() => {});
     else v.pause();
   });
 }, { threshold: 0 });
@@ -696,14 +696,29 @@ document.querySelectorAll(".reveal").forEach(el => revealObserver.observe(el));
   const video = document.getElementById("vsl-video");
   const playBtn = document.getElementById("vsl-play");
   if (!player || !video || !playBtn) return;
+  const heavy = () => [...document.querySelectorAll(".bg-fixed-video, .hero-loop")];
+  // While the VSL plays, rest every other video on the page so the player gets
+  // the whole GPU (the blurred glass layers re-render on each background frame).
+  function hush() {
+    document.body.classList.add("vsl-playing");
+    heavy().forEach((v) => v.pause());
+  }
+  function resume() {
+    document.body.classList.remove("vsl-playing");
+    document.querySelectorAll(".bg-fixed-video").forEach((v) => v.play().catch(() => {}));
+    document.querySelectorAll(".hero-loop").forEach((v) => { heroVideoObserver.unobserve(v); heroVideoObserver.observe(v); });
+  }
   function start() {
     video.controls = true;
     player.classList.add("playing");
+    hush();
     video.play().catch(() => { video.controls = true; });
   }
   playBtn.addEventListener("click", start);
   video.addEventListener("click", () => { if (!video.controls) start(); });
-  video.addEventListener("ended", () => { player.classList.remove("playing"); video.controls = false; video.load(); });
+  video.addEventListener("pause", () => { if (!video.ended) resume(); });
+  video.addEventListener("play", hush);
+  video.addEventListener("ended", () => { player.classList.remove("playing"); video.controls = false; video.load(); resume(); });
 })();
 
 /* ---------- Header scroll state ---------- */
