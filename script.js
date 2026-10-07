@@ -690,6 +690,22 @@ const revealObserver = new IntersectionObserver((entries) => {
 }, { threshold: 0.15 });
 document.querySelectorAll(".reveal").forEach(el => revealObserver.observe(el));
 
+/* ---------- Landing-page VSL player ---------- */
+(function () {
+  const player = document.getElementById("vsl-player");
+  const video = document.getElementById("vsl-video");
+  const playBtn = document.getElementById("vsl-play");
+  if (!player || !video || !playBtn) return;
+  function start() {
+    video.controls = true;
+    player.classList.add("playing");
+    video.play().catch(() => { video.controls = true; });
+  }
+  playBtn.addEventListener("click", start);
+  video.addEventListener("click", () => { if (!video.controls) start(); });
+  video.addEventListener("ended", () => { player.classList.remove("playing"); video.controls = false; video.load(); });
+})();
+
 /* ---------- Header scroll state ---------- */
 const header = document.getElementById("site-header");
 function onScroll() {
