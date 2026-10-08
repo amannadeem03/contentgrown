@@ -1336,10 +1336,14 @@ section[id], #top { scroll-margin-top: 6.875rem; }
 .faq-answer strong { font-weight: 600; }
 
 /* ---------- CTA ---------- */
-.cta { padding: 7.5rem 0 9.375rem; }
-.cta-inner { text-align: center; max-width: 45rem; }
-.cta-inner p { color: var(--muted); margin: 1.375rem auto 2.5rem; font-size: 1.03rem; line-height: 1.68; }
-.cta-footnote { margin-top: 1.875rem !important; font-size: 0.85rem !important; color: var(--muted-2); }
+/* Closing call to action: a one-line heading and the Book a Call button, centred.
+   Equal padding above and below (same 5rem as .proof / .faqs), no min-height, so there is no dead space before the footer line. */
+.cta { padding: 5rem 0; }
+.cta-inner { display: flex; flex-direction: column; align-items: center; text-align: center; }
+/* The shared h2 size is too big to hold "Ready to Scale Your Content?" on one line below ~900px, so the size follows the
+   screen width (6.2vw): from 560px up the whole heading stays on one line. Under 560px a legible one-line size doesn't
+   exist, so it keeps the normal 2.15rem heading size and wraps onto two balanced lines (h2 already has text-wrap: balance). */
+.cta-inner h2 { margin: 0 0 2rem; font-size: clamp(2.15rem, 6.2vw, 3.15rem); }
 
 /* ---------- Footer ---------- */
 /* One centred column: logo, the five logo buttons, then a full-width divider with the copyright. */
