@@ -518,15 +518,204 @@ videoTestimonials.forEach(t => {
   proofVideoGrid.appendChild(card);
 });
 
-const textTestimonialCount = 15;
-const proofQuoteGrid = document.getElementById("proof-quote-grid");
-for (let i = 1; i <= textTestimonialCount; i++) {
-  const num = String(i).padStart(2, "0");
-  const el = document.createElement("figure");
-  el.className = "proof-quote-card reveal";
-  el.innerHTML = `<img src="assets/testimonials/images/text-${num}.jpeg" alt="Client testimonial" loading="lazy">`;
-  proofQuoteGrid.appendChild(el);
-}
+/* Text testimonials: a fanned deck of review cards. One card sits in front,
+   the neighbours fan out behind it. Arrows, swipe, arrow keys, clicking a side
+   card, or the slow auto-advance bring the others forward, so all 15 are
+   reachable. The front card opens enlarged. Positions are plain CSS
+   (data-pos on each card); JS only flips attributes when the card changes. */
+(function () {
+  const root = document.getElementById("proof-quote-grid");
+  if (!root) return;
+  // [width, height] of text-01 ... text-15, so layout is stable before they load.
+  const dims = [[1268, 114], [1210, 150], [1202, 132], [1254, 290], [1258, 156], [1216, 114], [1236, 172], [1226, 136], [1202, 120], [1258, 114], [1250, 202], [1238, 126], [1230, 158], [1172, 136], [1240, 148]];
+  const total = dims.length;
+  const half = Math.floor(total / 2);
+  const pad = n => String(n).padStart(2, "0");
+  const icon = {
+    quote: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.2 5C5.6 6.3 3.5 9.2 3.5 13.2V19h6.3v-6.1H6.9c0-2.2 1-3.8 3.1-4.7L9.2 5zm10.3 0c-3.6 1.3-5.7 4.2-5.7 8.2V19h6.3v-6.1h-2.9c0-2.2 1-3.8 3.1-4.7L19.5 5z"/></svg>',
+    zoom: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2M11 8.3v5.4M8.3 11h5.4"/></svg>',
+    prev: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
+    next: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>',
+  };
+
+  let cardsHtml = "";
+  let ticksHtml = "";
+  dims.forEach((d, i) => {
+    cardsHtml += `<button class="quote-fan-card" type="button" data-index="${i}" tabindex="-1">
+      <span class="quote-fan-badge" aria-hidden="true">${icon.quote}</span>
+      <span class="quote-fan-zoom" aria-hidden="true">${icon.zoom}</span>
+      <img src="assets/testimonials/images/text-${pad(i + 1)}.jpeg" alt="Client testimonial ${i + 1}" width="${d[0]}" height="${d[1]}" loading="lazy" decoding="async" draggable="false">
+    </button>`;
+    ticksHtml += `<span class="quote-fan-tick" data-index="${i}"></span>`;
+  });
+  root.innerHTML = `
+    <div class="quote-fan-viewport">
+      <div class="quote-fan-stage" role="group" aria-roledescription="carousel" aria-label="Client text testimonials">${cardsHtml}</div>
+    </div>
+    <div class="quote-fan-controls">
+      <button class="quote-fan-arrow" type="button" data-step="-1" aria-label="Previous testimonial">${icon.prev}</button>
+      <div class="quote-fan-meter">
+        <span class="quote-fan-count" aria-live="off"><b>01</b> / ${pad(total)}</span>
+        <span class="quote-fan-ticks" aria-hidden="true">${ticksHtml}</span>
+      </div>
+      <button class="quote-fan-arrow" type="button" data-step="1" aria-label="Next testimonial">${icon.next}</button>
+    </div>`;
+
+  const stage = root.querySelector(".quote-fan-stage");
+  const cards = [...root.querySelectorAll(".quote-fan-card")];
+  const ticks = [...root.querySelectorAll(".quote-fan-tick")];
+  const countNum = root.querySelector(".quote-fan-count b");
+  const countEl = root.querySelector(".quote-fan-count");
+  let cur = 0;
+
+  function update() {
+    cards.forEach((card, i) => {
+      const d = ((i - cur + total + half) % total) - half;
+      const pos = Math.max(-3, Math.min(3, d));
+      const hidden = Math.abs(pos) > 2;
+      card.dataset.pos = pos;
+      card.tabIndex = pos === 0 ? 0 : -1;
+      card.setAttribute("aria-label", (pos === 0 ? "Enlarge client testimonial " : "Show client testimonial ") + (i + 1));
+      card.setAttribute("aria-hidden", hidden ? "true" : "false");
+      card.inert = hidden;
+    });
+    ticks.forEach((t, i) => t.classList.toggle("active", i === cur));
+    countNum.textContent = pad(cur + 1);
+  }
+
+  /* Auto-advance: slow, paused while hovered / focused / off-screen / tab hidden
+     / modal open, and switched off for good once the visitor takes over. */
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let timer = 0, inView = false, hovering = false, focused = false, modalOpen = false, userTookOver = false;
+  function schedule() {
+    clearTimeout(timer);
+    if (reduceMotion || userTookOver || !inView || hovering || focused || modalOpen || document.hidden) return;
+    const dwell = 4200 + Math.max(0, dims[cur][1] - 110) * 28;   // longer reviews stay up longer
+    timer = setTimeout(() => go(1, true), dwell);
+  }
+  function go(step, auto) {
+    cur = (cur + step + total) % total;
+    if (!auto) { userTookOver = true; countEl.setAttribute("aria-live", "polite"); }
+    const hadFocus = stage.contains(document.activeElement);
+    update();
+    if (hadFocus) cards[cur].focus({ preventScroll: true });
+    if (modal.open) modal.show(cur);
+    schedule();
+  }
+  function goTo(index) {
+    const step = ((index - cur + total + half) % total) - half;
+    if (step) go(step);
+  }
+
+  /* Enlarged view: a small image-only modal (kept separate from the video lightbox). */
+  const modal = {
+    open: false, el: null, img: null, count: null, opener: null,
+    build() {
+      const el = document.createElement("div");
+      el.className = "quote-fan-modal";
+      el.setAttribute("role", "dialog");
+      el.setAttribute("aria-modal", "true");
+      el.setAttribute("aria-label", "Client testimonial");
+      el.innerHTML = `
+        <button class="quote-fan-modal-close" type="button" aria-label="Close">&times;</button>
+        <div class="quote-fan-modal-card"><img alt="" draggable="false"></div>
+        <div class="quote-fan-modal-bar">
+          <button class="quote-fan-arrow" type="button" data-step="-1" aria-label="Previous testimonial">${icon.prev}</button>
+          <span class="quote-fan-count"><b>01</b> / ${pad(total)}</span>
+          <button class="quote-fan-arrow" type="button" data-step="1" aria-label="Next testimonial">${icon.next}</button>
+        </div>`;
+      document.body.appendChild(el);
+      this.el = el;
+      this.img = el.querySelector("img");
+      this.count = el.querySelector(".quote-fan-count b");
+      el.addEventListener("click", e => {
+        if (e.target === el || e.target.closest(".quote-fan-modal-close")) return this.close();
+        const arrow = e.target.closest(".quote-fan-arrow");
+        if (arrow) go(Number(arrow.dataset.step));
+      });
+      el.addEventListener("keydown", e => {
+        if (e.key === "Escape") this.close();
+        else if (e.key === "ArrowLeft") go(-1);
+        else if (e.key === "ArrowRight") go(1);
+        else if (e.key === "Tab") {
+          const f = [...el.querySelectorAll("button")];
+          const first = f[0], last = f[f.length - 1];
+          if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+          else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        }
+      });
+    },
+    show(i) {
+      this.img.src = `assets/testimonials/images/text-${pad(i + 1)}.jpeg`;
+      this.img.alt = `Client testimonial ${i + 1}`;
+      this.count.textContent = pad(i + 1);
+    },
+    openAt(i, opener) {
+      if (!this.el) this.build();
+      this.opener = opener;
+      this.open = true;
+      modalOpen = true;
+      this.show(i);
+      this.el.classList.add("open");
+      this.lockedByUs = !document.body.classList.contains("scroll-locked");
+      document.body.classList.add("scroll-locked");
+      this.el.querySelector(".quote-fan-modal-close").focus({ preventScroll: true });
+      schedule();
+    },
+    close() {
+      if (!this.open) return;
+      this.open = false;
+      modalOpen = false;
+      this.el.classList.remove("open");
+      if (this.lockedByUs) document.body.classList.remove("scroll-locked");
+      if (this.opener) this.opener.focus({ preventScroll: true });
+      schedule();
+    },
+  };
+
+  /* Input: click, arrows, keys, swipe */
+  let sx = 0, sy = 0, tracking = false, swiped = false;
+  stage.addEventListener("pointerdown", e => {
+    if (e.button > 0) return;
+    sx = e.clientX; sy = e.clientY; tracking = true; swiped = false;
+  });
+  stage.addEventListener("pointerup", e => {
+    if (!tracking) return;
+    tracking = false;
+    const dx = e.clientX - sx, dy = e.clientY - sy;
+    if (Math.abs(dx) > 44 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+      swiped = true;                       // swallow the click a mouse drag would end with
+      setTimeout(() => { swiped = false; }, 80);
+      go(dx < 0 ? 1 : -1);
+    }
+  });
+  stage.addEventListener("pointercancel", () => { tracking = false; });
+  stage.addEventListener("click", e => {
+    if (swiped) { swiped = false; return; }
+    const card = e.target.closest(".quote-fan-card");
+    if (!card) return;
+    const i = Number(card.dataset.index);
+    if (i === cur) modal.openAt(i, card); else goTo(i);
+  });
+  root.addEventListener("click", e => {
+    const arrow = e.target.closest(".quote-fan-arrow");
+    if (arrow) return go(Number(arrow.dataset.step));
+    const tick = e.target.closest(".quote-fan-tick");
+    if (tick) goTo(Number(tick.dataset.index));
+  });
+  root.addEventListener("keydown", e => {
+    if (e.key === "ArrowLeft") { e.preventDefault(); go(-1); }
+    else if (e.key === "ArrowRight") { e.preventDefault(); go(1); }
+  });
+  stage.addEventListener("pointerenter", e => { if (e.pointerType === "mouse") { hovering = true; schedule(); } });
+  stage.addEventListener("pointerleave", () => { hovering = false; schedule(); });
+  root.addEventListener("focusin", () => { focused = true; schedule(); });
+  root.addEventListener("focusout", () => { focused = false; schedule(); });
+  document.addEventListener("visibilitychange", schedule);
+  new IntersectionObserver(([entry]) => { inView = entry.isIntersecting; schedule(); }, { threshold: 0.3 }).observe(root);
+
+  update();
+})();
 
 /* ---------- FAQ ---------- */
 const faqs = [
