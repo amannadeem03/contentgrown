@@ -32,11 +32,11 @@
       <ul class="nav-links" id="nav-links">
         <li><a href="#top" data-target="hero">Home</a></li>
         <li class="nav-item-dropdown" id="services-dropdown-wrap">
-          <a href="#services" data-target="services" class="nav-dropdown-trigger">
+          <button type="button" class="nav-dropdown-trigger" id="services-trigger" data-target="services" aria-haspopup="true" aria-expanded="false" aria-controls="services-dropdown">
             Services
             <svg class="nav-chevron" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </a>
-          <div class="services-dropdown" id="services-dropdown"></div>
+          </button>
+          <ul class="services-dropdown" id="services-dropdown" role="menu" aria-labelledby="services-trigger"></ul>
         </li>
         <li><a href="#work" data-target="work">Our Work</a></li>
         <li><a href="#pricing" data-target="pricing">Pricing</a></li>
@@ -51,11 +51,11 @@
   </div>
   <div class="mobile-menu" id="mobile-menu">
     <a href="#top">Home</a>
-    <button class="mobile-services-toggle" id="mobile-services-toggle" type="button">
+    <button class="mobile-services-toggle" id="mobile-services-toggle" type="button" aria-expanded="false" aria-controls="mobile-services-list">
       Services
       <svg class="nav-chevron" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
-    <div class="mobile-services-list" id="mobile-services-list"></div>
+    <ul class="mobile-services-list" id="mobile-services-list"></ul>
     <a href="#work">Our Work</a>
     <a href="#pricing">Pricing</a>
     <a href="#proof">Client Stories</a>
