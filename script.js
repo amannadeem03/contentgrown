@@ -460,9 +460,6 @@ const pricingPlans = {
     intro: "For polished, retention-focused short-form content.",
     features: [
       { icon: "spark", text: "Up to 90 seconds per video" },
-      { icon: "spark", text: "Professional captions (dynamic & styled)" },
-      { icon: "spark", text: "B-roll footage (stock or provided)" },
-      { icon: "spark", text: "Music & basic sound design" },
       { icon: "spark", text: "2 rounds of revisions per video" },
       { icon: "spark", text: "48–72 hour turnaround per video" },
     ],
