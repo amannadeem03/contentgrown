@@ -60,7 +60,10 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-body.scroll-locked { overflow: hidden; }
+/* Used while the Get Started dialog is open. --scrollbar-gap (set in script.js) replaces the width
+   of the vanishing scrollbar so the page and the fixed header do not shift sideways. */
+body.scroll-locked { overflow: hidden; padding-right: var(--scrollbar-gap, 0px); }
+body.scroll-locked .site-header { right: var(--scrollbar-gap, 0px); }
 
 img, video { max-width: 100%; display: block; }
 
@@ -1294,6 +1297,140 @@ section[id], #top { scroll-margin-top: 6.875rem; }
   transition: color 0.3s var(--ease-soft);
 }
 .lightbox-close:hover { color: var(--amber); }
+
+/* ---------- Get Started chooser (chat-style dialog; built in script.js) ---------- */
+.choose {
+  position: fixed; inset: 0;
+  z-index: 210;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(5, 5, 4, 0.72);
+  overscroll-behavior: contain;
+}
+.choose.open { display: flex; animation: choose-fade 0.25s var(--ease-soft); }
+.choose-dialog {
+  position: relative;
+  width: 100%;
+  max-width: 26rem;
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 1.25rem;
+  background:
+    radial-gradient(92% 128% at 86% -12%, rgba(248, 98, 21, 0.34), transparent 53%),
+    linear-gradient(112deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 45%, rgba(11, 9, 8, 0.92) 100%),
+    #0b0908;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 34px 72px rgba(0, 0, 0, 0.52);
+  outline: none;
+  animation: choose-rise 0.25s var(--ease);
+}
+.choose-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem 0.9rem 1.1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.choose-avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background: #0b0908;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+.choose-avatar img { width: 62%; height: 62%; object-fit: contain; }
+.choose-name { font-size: 0.8rem; font-weight: 700; letter-spacing: 0.14em; line-height: 1.2; }
+.choose-close {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.125rem;
+  height: 2.125rem;
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--chalk);
+  cursor: var(--cursor-img), pointer;
+  transition: background 0.3s var(--ease-soft), color 0.3s var(--ease-soft);
+}
+.choose-close svg { width: 1rem; height: 1rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.choose-close:hover { background: rgba(248, 98, 21, 0.25); color: var(--amber-light); }
+.choose-body { padding: 1.1rem 1.1rem 1.25rem; }
+.choose-bubble {
+  max-width: 94%;
+  padding: 0.8rem 0.95rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1rem 1rem 1rem 0.3rem;
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+.choose-bubble strong { font-weight: 700; color: var(--amber-light); }
+.choose-summary { margin: 0.55rem 0 1.1rem 0.3rem; color: var(--muted); font-size: 0.8rem; line-height: 1.4; }
+.choose-options { display: grid; gap: 0.55rem; }
+.choose-opt {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.7rem 0.85rem 0.7rem 0.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 0.95rem;
+  background: rgba(10, 9, 8, 0.55);
+  cursor: var(--cursor-img), pointer;
+  transition: border-color 0.3s var(--ease-soft), background 0.3s var(--ease-soft);
+}
+.choose-opt:hover { border-color: rgba(248, 98, 21, 0.55); background: rgba(248, 98, 21, 0.1); }
+.choose-opt:focus-visible, .choose-close:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.choose-opt-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--chalk);
+}
+.choose-opt-icon svg { width: 1.3rem; height: 1.3rem; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.choose-opt-icon svg [fill="currentColor"] { stroke: none; }
+.choose-opt--wa .choose-opt-icon { background: rgba(37, 211, 102, 0.15); color: #25d366; }
+.choose-opt--call .choose-opt-icon { background: rgba(248, 98, 21, 0.18); color: var(--amber-light); }
+.choose-opt-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.15rem; }
+.choose-opt-text strong { font-size: 1rem; font-weight: 700; line-height: 1.25; }
+.choose-opt-text span { color: rgba(247, 246, 243, 0.62); font-size: 0.8rem; line-height: 1.35; }
+.choose-opt-arrow { flex: none; display: grid; color: var(--muted); transition: color 0.3s var(--ease-soft), transform 0.3s var(--ease); }
+.choose-opt-arrow svg { width: 1rem; height: 1rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.choose-opt:hover .choose-opt-arrow { color: var(--amber-light); transform: translateX(0.2rem); }
+@keyframes choose-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes choose-rise { from { opacity: 0; transform: translateY(0.75rem); } to { opacity: 1; transform: none; } }
+@keyframes choose-sheet { from { opacity: 0; transform: translateY(1.5rem); } to { opacity: 1; transform: none; } }
+/* Phones: the card docks to the bottom edge as a sheet. */
+@media (max-width: 560px) {
+  .choose { align-items: flex-end; padding: 0; }
+  .choose-dialog {
+    max-width: none;
+    max-height: calc(100vh - 1rem);
+    max-height: calc(100dvh - 1rem);
+    border-bottom: 0;
+    border-radius: 1.25rem 1.25rem 0 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    animation-name: choose-sheet;
+  }
+  .choose-body { padding: 1rem 1rem 1.25rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .choose.open, .choose-dialog { animation: none; }
+  .choose-opt-arrow, .choose-opt:hover .choose-opt-arrow { transition: none; transform: none; }
+}
 
 /* ---------- Reveal animation ---------- */
 .reveal { opacity: 0; transform: translateY(22px); transition: opacity 0.9s var(--ease), transform 0.9s var(--ease); }

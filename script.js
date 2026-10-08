@@ -453,6 +453,14 @@ const pricingIcons = {
   spark: '<path class="pricing-icon-fill" d="M12 4l2.2 5.8L20 12l-5.8 2.2L12 20l-2.2-5.8L4 12l5.8-2.2z"/>',
 };
 
+// Paste the Payoneer payment-link URL for each package here. Leave empty to hide the Pay option.
+// (Each URL must start with https:// - the "Pay online" choice in the Get Started dialog only
+// appears for a package once its link is filled in.)
+const paymentLinks = {
+  standard: { Starter: "", Growth: "", Scale: "" },
+  advanced: { Starter: "", Growth: "", Scale: "" },
+};
+
 // To edit prices, badges or feature lines, change the plain data below (total = videos x perVideo).
 const pricingPlans = {
   standard: {
@@ -507,7 +515,7 @@ function renderPricing(tier) {
       <p class="pricing-includes-title">Includes <span class="pricing-includes-tier">(${label})</span></p>
       <ul class="pricing-features">${features.map(pricingFeatureHtml).join("")}</ul>
       <div class="pricing-actions">
-        <a class="btn ${plan.badge ? "btn-solid btn-glass" : "btn-glass"}" href="#book">Get Started</a>
+        <a class="btn ${plan.badge ? "btn-solid btn-glass" : "btn-glass"}" href="#book" data-tier="${tier}" data-plan="${plan.name}" aria-haspopup="dialog">Get Started</a>
       </div>
     </article>`).join("");
   pricingGrid.dataset.tier = tier;
@@ -519,6 +527,131 @@ function renderPricing(tier) {
 }
 pricingToggleOptions.forEach(option => option.addEventListener("click", () => renderPricing(option.dataset.tier)));
 renderPricing("standard");
+
+/* ---------- Get Started chooser: a small chat-style dialog ---------- */
+// Clicking "Get Started" on a package opens this instead of scrolling away. It offers WhatsApp,
+// a booking call and (only once a payment link is set in paymentLinks above) online payment.
+const WHATSAPP_NUMBER = "923181183581";
+const BOOKING_URL = "https://calendly.com/contentgrownn/15mincall";
+const chooseSvg = {
+  whatsapp: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>',
+  calendar: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01"/></svg>',
+  card: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M2.5 10h19M6.5 15h4"/></svg>',
+  arrow: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+  close: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+};
+let chooseEl = null;      // the overlay; created on the first click
+let chooseTrigger = null; // the Get Started button that opened it, so focus can go back there
+let choosePressedInside = false;
+
+function buildChooser() {
+  chooseEl = document.createElement("div");
+  chooseEl.className = "choose";
+  chooseEl.innerHTML = `
+    <div class="choose-dialog" role="dialog" aria-modal="true" aria-labelledby="choose-title" aria-describedby="choose-msg" tabindex="-1">
+      <div class="choose-head">
+        <span class="choose-avatar"><img src="assets/favicon-192.png" alt="" width="96" height="96"></span>
+        <strong class="choose-name" id="choose-title">CONTENTGROWN</strong>
+        <button class="choose-close" type="button" aria-label="Close">${chooseSvg.close}</button>
+      </div>
+      <div class="choose-body">
+        <p class="choose-bubble" id="choose-msg"></p>
+        <p class="choose-summary"></p>
+        <div class="choose-options"></div>
+      </div>
+    </div>`;
+  // Close on the X or on a click that starts and ends on the dark overlay (so dragging a text
+  // selection out of the dialog does not close it).
+  chooseEl.addEventListener("pointerdown", (e) => { choosePressedInside = e.target !== chooseEl; });
+  chooseEl.addEventListener("click", (e) => {
+    const outside = e.target === chooseEl && !choosePressedInside;
+    choosePressedInside = false;
+    if (outside || e.target.closest(".choose-close") || e.target.closest(".choose-opt")) closeChooser();
+  });
+  document.body.appendChild(chooseEl);
+}
+
+function chooseOption(cls, href, icon, title, sub) {
+  const a = document.createElement("a");
+  a.className = `choose-opt ${cls}`;
+  a.href = href;
+  a.target = "_blank";
+  a.rel = "noopener";
+  a.innerHTML = `<span class="choose-opt-icon">${icon}</span><span class="choose-opt-text"><strong></strong><span></span></span><span class="choose-opt-arrow">${chooseSvg.arrow}</span>`;
+  a.querySelector("strong").textContent = title;
+  a.querySelector(".choose-opt-text > span").textContent = sub;
+  return a;
+}
+
+function chooserKeydown(e) {
+  if (e.key === "Escape") { e.preventDefault(); closeChooser(); return; }
+  if (e.key !== "Tab") return;
+  // Keep Tab / Shift+Tab inside the dialog.
+  const dialog = chooseEl.firstElementChild;
+  const items = Array.from(dialog.querySelectorAll("a[href], button:not([disabled])"));
+  const first = items[0], last = items[items.length - 1], active = document.activeElement;
+  if (!dialog.contains(active) || active === dialog) {
+    e.preventDefault();
+    (e.shiftKey ? last : first).focus();
+  } else if (e.shiftKey && active === first) {
+    e.preventDefault();
+    last.focus();
+  } else if (!e.shiftKey && active === last) {
+    e.preventDefault();
+    first.focus();
+  }
+}
+
+function openChooser(tier, planName, trigger) {
+  const set = pricingPlans[tier];
+  const plan = set && set.plans.find(p => p.name === planName);
+  if (!plan) return;
+  if (!chooseEl) buildChooser();
+  const total = plan.total.toLocaleString("en-US");
+  chooseEl.querySelector(".choose-bubble").innerHTML = `Hi! Great choice. How would you like to get started with <strong>${set.label} - ${plan.name}</strong>?`;
+  chooseEl.querySelector(".choose-summary").textContent = `${plan.videos} videos · $${plan.perVideo}/video · $${total} total`;
+
+  const waText = `Hi CONTENTGROWN! I'm interested in the ${plan.name} package (${set.label}, ${plan.videos} videos, $${total}). I'd like to get started.`;
+  const options = chooseEl.querySelector(".choose-options");
+  options.replaceChildren(
+    chooseOption("choose-opt--wa", `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(waText)}`, chooseSvg.whatsapp, "Chat on WhatsApp", "Ask a question or start the conversation"),
+    chooseOption("choose-opt--call", BOOKING_URL, chooseSvg.calendar, "Book a call", "Prefer to talk it through? Pick a time"),
+  );
+  // "Pay online" only exists once a https:// link has been pasted into paymentLinks for this package.
+  const rawPay = (paymentLinks[tier] || {})[plan.name];
+  const payUrl = typeof rawPay === "string" ? rawPay.trim() : "";
+  if (payUrl.startsWith("https://")) {
+    options.appendChild(chooseOption("choose-opt--pay", payUrl, chooseSvg.card, "Pay online", "Secure payment via Payoneer"));
+  }
+
+  chooseTrigger = trigger || null;
+  // Lock page scroll (body.scroll-locked); keep the page from jumping sideways when the scrollbar goes.
+  document.body.style.setProperty("--scrollbar-gap", `${Math.max(0, window.innerWidth - document.documentElement.clientWidth)}px`);
+  document.body.classList.add("scroll-locked");
+  chooseEl.classList.add("open");
+  document.addEventListener("keydown", chooserKeydown);
+  chooseEl.firstElementChild.scrollTop = 0;
+  chooseEl.firstElementChild.focus({ preventScroll: true });
+}
+
+function closeChooser() {
+  if (!chooseEl || !chooseEl.classList.contains("open")) return;
+  chooseEl.classList.remove("open");
+  document.removeEventListener("keydown", chooserKeydown);
+  document.body.classList.remove("scroll-locked");
+  document.body.style.removeProperty("--scrollbar-gap");
+  const trigger = chooseTrigger;
+  chooseTrigger = null;
+  if (trigger && trigger.isConnected) trigger.focus({ preventScroll: true });
+}
+
+// One listener on the grid (the cards are re-rendered when the Standard / Advanced toggle changes).
+pricingGrid.addEventListener("click", (e) => {
+  const btn = e.target.closest("a[data-plan]");
+  if (!btn) return;
+  e.preventDefault(); // href="#book" stays as the no-JS fallback
+  openChooser(btn.dataset.tier, btn.dataset.plan, btn);
+});
 
 /* ---------- Proof / testimonials ---------- */
 const videoTestimonials = [
