@@ -16,8 +16,6 @@
   --ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
   --font-display: "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-body: "Montserrat", "Helvetica Neue", Arial, sans-serif;
-  /* review cards: closest free match to the Helvetica-style italic of the original review screenshots */
-  --font-quote: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --cursor-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='a' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23ffd9b3'/%3E%3Cstop offset='1' stop-color='%23f86215'/%3E%3C/linearGradient%3E%3ClinearGradient id='b' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23b8430a'/%3E%3Cstop offset='1' stop-color='%237a2d07'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M6 2 L2 26 L14 20 Z' fill='url(%23a)' stroke='%230a0a09' stroke-width='1.2' stroke-linejoin='round'/%3E%3Cpath d='M6 2 L14 20 L26 24 Z' fill='url(%23b)' stroke='%230a0a09' stroke-width='1.2' stroke-linejoin='round'/%3E%3C/svg%3E") 6 2;
 }
 
@@ -1074,7 +1072,6 @@ section[id], #top { scroll-margin-top: 6.875rem; }
   grid-template-columns: repeat(3, minmax(0, 18rem));
   justify-content: center;
   gap: 1.5rem;
-  margin-bottom: 4rem;
 }
 .proof-video-card {
   position: relative;
@@ -1144,169 +1141,6 @@ section[id], #top { scroll-margin-top: 6.875rem; }
 .proof-video-card:focus-visible::after { opacity: 0.65; }
 .proof-video-card:focus-visible .proof-play-icon { background: var(--amber); transform: translate(-50%, -50%) scale(1.15); }
 .proof-video-card:focus-visible .proof-play-icon svg { color: #0a0a09; }
-
-/* Text testimonials: a fanned deck of review cards (built in script.js).
-   One card sits in front, its neighbours fan out behind it. Every position is
-   plain CSS driven by the card's data-pos, so motion is transform/opacity only. */
-.proof-quote-head { text-align: center; }
-.proof-quote-head h3 { font-size: clamp(1.7rem, 3vw, 2.4rem); }
-.proof-quote-head p { margin-top: 0.5rem; color: var(--muted); font-size: 1rem; }
-
-.quote-fan { --qf-w: min(46rem, 66vw); position: relative; }
-.quote-fan-viewport {
-  /* full-bleed so the fan can spill off the edges of the page, but is clipped
-     sideways here (vertical overflow stays free for shadows and the arc) */
-  position: relative;
-  width: 100vw;
-  margin-left: calc(50% - 50vw);
-  padding: 2.25rem 0 3rem;
-  overflow: hidden;
-}
-@supports (overflow: clip) {
-  .quote-fan-viewport { overflow-x: clip; overflow-y: visible; }
-}
-.quote-fan-stage {
-  /* every card sits in the same grid cell, so the stage is as tall as the
-     longest review and each card is centred in it */
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  place-items: center;
-  touch-action: pan-y;
-  -webkit-user-select: none;
-  user-select: none;
-}
-.quote-fan-card {
-  --x: 0; --y: 0; --r: 0; --s: 1; --o: 1; --z: 1; --shade: 0; --lift: 0; --rm: 1;
-  grid-area: 1 / 1;
-  position: relative;
-  display: flex;
-  align-items: center;
-  width: var(--qf-w);
-  min-height: 11rem;    /* short reviews get a roomy card; long ones grow to fit */
-  margin: 0;
-  padding: 1.75rem 2.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 1rem;
-  background: radial-gradient(92% 128% at 86% -12%, rgba(248, 98, 21, 0.17), transparent 53%), #fff;
-  box-shadow: 0 1.75rem 3rem -1.5rem rgba(0, 0, 0, 0.85), 0 0.375rem 1rem -0.5rem rgba(0, 0, 0, 0.5);
-  color: #1b1a18;
-  text-align: left;
-  cursor: var(--cursor-img), pointer;
-  -webkit-tap-highlight-color: transparent;
-  opacity: var(--o);
-  z-index: var(--z);
-  transform: translate3d(calc(var(--x) * var(--qf-w)), calc((var(--y) - var(--lift)) * 1rem), 0) rotate(calc(var(--r) * var(--rm) * 1deg)) scale(var(--s));
-  transition: transform 0.8s var(--ease), opacity 0.5s var(--ease-soft);
-}
-/* the review itself: real, selectable text */
-.quote-fan-text {
-  margin: 0;
-  font-family: var(--font-quote);
-  font-style: italic;
-  font-weight: 400;
-  font-size: 1.1rem;
-  line-height: 1.55;
-}
-.quote-fan-text p { line-height: inherit; }   /* the site-wide p { 1.68 } is too airy for the cards */
-.quote-fan-text p + p { margin-top: 0.85em; }
-/* darkens cards that sit behind the front one */
-.quote-fan-card::after {
-  content: "";
-  position: absolute; inset: 0;
-  border-radius: inherit;
-  background: #0a0a09;
-  opacity: var(--shade);
-  pointer-events: none;
-  transition: opacity 0.5s var(--ease-soft);
-}
-/* orange glow that fades in around the front card */
-.quote-fan-card::before {
-  content: "";
-  position: absolute; inset: -1px;
-  border-radius: inherit;
-  box-shadow: 0 0 3.5rem -0.5rem rgba(248, 98, 21, 0.4);
-  opacity: 0;
-  z-index: -1;
-  pointer-events: none;
-  transition: opacity 0.6s var(--ease-soft);
-}
-.quote-fan-card[data-pos="0"]::before { opacity: 1; }
-
-.quote-fan-card[data-pos="0"]  { --z: 10; cursor: var(--cursor-img), auto; -webkit-user-select: text; user-select: text; }
-.quote-fan-card[data-pos="-1"] { --x: -0.37; --y: 1.8; --r: -5;  --s: 0.95; --z: 8; --shade: 0.2; }
-.quote-fan-card[data-pos="1"]  { --x: 0.37;  --y: 1.8; --r: 5;  --s: 0.95; --z: 8; --shade: 0.2; }
-.quote-fan-card[data-pos="-2"] { --x: -0.69; --y: 3.7; --r: -10; --s: 0.9;  --z: 6; --shade: 0.42; }
-.quote-fan-card[data-pos="2"]  { --x: 0.69;  --y: 3.7; --r: 10;  --s: 0.9;  --z: 6; --shade: 0.42; }
-.quote-fan-card[data-pos="-3"] { --x: -0.94; --y: 5.5; --r: -14; --s: 0.85; --z: 1; --shade: 0.55; --o: 0; pointer-events: none; }
-.quote-fan-card[data-pos="3"]  { --x: 0.94;  --y: 5.5; --r: 14;  --s: 0.85; --z: 1; --shade: 0.55; --o: 0; pointer-events: none; }
-
-/* orange quote badges pinned to the top corners of the front card:
-   an opening mark on the left, the matching closing mark on the right */
-.quote-fan-badge {
-  position: absolute;
-  top: -0.7rem; left: 1.25rem;
-  display: grid; place-items: center;
-  width: 1.75rem; height: 1.75rem;
-  border-radius: 50%;
-  z-index: 1;
-  pointer-events: none;
-  color: #fff;
-  background: linear-gradient(145deg, #ff8f4d, var(--amber));
-  box-shadow: 0 0.5rem 1rem -0.35rem rgba(248, 98, 21, 0.8);
-  transition: opacity 0.5s var(--ease-soft);
-}
-.quote-fan-badge-close { left: auto; right: 1.25rem; }
-.quote-fan-badge svg { width: 0.8rem; height: 0.8rem; }
-.quote-fan-card:not([data-pos="0"]) .quote-fan-badge { opacity: 0; }
-
-@media (hover: hover) {
-  .quote-fan-card:hover { --lift: 0.9; --rm: 0.4; --z: 9; }
-  .quote-fan-card:hover::after { opacity: calc(var(--shade) * 0.35); }
-  .quote-fan-card[data-pos="0"]:hover { --lift: 0.4; --rm: 1; --z: 10; }
-}
-
-/* controls under the fan */
-.quote-fan-controls {
-  display: flex; align-items: center; justify-content: center;
-  gap: 1.25rem;
-}
-.quote-fan-arrow {
-  display: grid; place-items: center;
-  width: 2.75rem; height: 2.75rem;
-  border-radius: 50%;
-  border: 1px solid var(--line-soft);
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--chalk);
-  cursor: var(--cursor-img), pointer;
-  transition: border-color 0.3s var(--ease-soft), color 0.3s var(--ease-soft), background 0.3s var(--ease-soft);
-}
-.quote-fan-arrow svg { width: 1.05rem; height: 1.05rem; }
-.quote-fan-arrow:hover { border-color: rgba(248, 98, 21, 0.6); color: var(--amber); background: rgba(248, 98, 21, 0.08); }
-.quote-fan-arrow:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
-.quote-fan-meter { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; min-width: 8rem; }
-.quote-fan-count { color: var(--muted); font-size: 0.78rem; font-weight: 500; letter-spacing: 0.14em; font-variant-numeric: tabular-nums; }
-.quote-fan-count b { color: var(--chalk); font-weight: 600; }
-.quote-fan-ticks { display: flex; gap: 0.2rem; }
-.quote-fan-tick {
-  position: relative;
-  display: block;
-  width: 0.95rem; height: 1rem;
-  padding: 0;
-  border: 0;
-  background: none;
-  cursor: var(--cursor-img), pointer;
-}
-.quote-fan-tick::before {
-  content: "";
-  position: absolute; left: 0; right: 0; top: 50%;
-  height: 0.2rem; margin-top: -0.1rem;
-  border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.16);
-  transition: background 0.4s var(--ease-soft), transform 0.4s var(--ease-soft);
-}
-.quote-fan-tick:hover::before { background: rgba(255, 255, 255, 0.4); }
-.quote-fan-tick.active::before { background: var(--amber); transform: scaleY(1.6); }
-.quote-fan-tick:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; border-radius: 0.2rem; }
 
 /* ---------- FAQ ---------- */
 .faqs { padding: 5rem 0; }
@@ -1505,16 +1339,16 @@ section[id], #top { scroll-margin-top: 6.875rem; }
   .service-row, .service-row.active, .service-row.previous, .service-row.next { position:relative; left:auto; top:auto; width:100%; height:auto; min-height:11.875rem; transform:none; opacity:1; filter:none; pointer-events:auto; }
   .services-dots, .services-note { display:none; }
   /* tablet: still three across and centred, just smaller (15rem cap, about 27rem tall) */
-  .proof-video-grid { grid-template-columns: repeat(3, minmax(0, 15rem)); gap: 1rem; margin-bottom: 3.5rem; }
-  .quote-fan { --qf-w: min(38rem, 76vw); }
-  .quote-fan-text { font-size: 1.06rem; }
+  .proof-video-grid { grid-template-columns: repeat(3, minmax(0, 15rem)); gap: 1rem; }
 }
 @media (max-width: 560px) {
   .stat-item { min-width: 8.25rem; padding: 1rem 0.75rem; }
   .work-grid { grid-template-columns: repeat(2, 1fr); }
   /* phones: one swipeable strip of vertical cards that snap to the left gutter, with the
      next card peeking in. It bleeds out past the section's 1.5rem side padding to the screen
-     edges, and the padding gives a lifted/glowing card room inside the scroll clip. */
+     edges, and the padding gives a lifted/glowing card room inside the scroll clip. The
+     negative margins cancel that padding (top and bottom), so the strip adds no space of its
+     own: the section's 5rem padding alone sets the gap above and below the cards. */
   .proof-video-grid {
     display: flex;
     justify-content: flex-start;
@@ -1524,20 +1358,10 @@ section[id], #top { scroll-margin-top: 6.875rem; }
     scroll-padding-inline: 1.5rem;
     scrollbar-width: none;
     padding: 1.25rem 1.5rem 3rem;
-    margin: -1.25rem -1.5rem 0.5rem;
+    margin: -1.25rem -1.5rem -3rem;
   }
   .proof-video-grid::-webkit-scrollbar { display: none; }
   .proof-video-card { flex: 0 0 min(15rem, 68vw); scroll-snap-align: start; }
-  .quote-fan { --qf-w: 84vw; }
-  .quote-fan-viewport { padding: 2.25rem 0 1.75rem; }
-  .quote-fan-card { min-height: 10.25rem; padding: 1.4rem 1.25rem; border-radius: 0.875rem; }
-  .quote-fan-text { font-size: 1rem; line-height: 1.5; }
-  .quote-fan-card[data-pos="-1"] { --x: -0.2;  --y: 0.9; --r: -4; }
-  .quote-fan-card[data-pos="1"]  { --x: 0.2;   --y: 0.9; --r: 4; }
-  .quote-fan-card[data-pos="-2"] { --x: -0.34; --y: 1.9; --r: -8; }
-  .quote-fan-card[data-pos="2"]  { --x: 0.34;  --y: 1.9; --r: 8; }
-  .quote-fan-ticks { display: none; }
-  .quote-fan-meter { min-width: 5rem; }
   .site-footer { padding: 3rem 0 0; }
   .footer-inner { gap: 2rem; padding-bottom: 3rem; }
   /* footer logo: a fixed 2.1rem height would be wider than a 340px screen, so size it by width (same aspect ratio) */
@@ -1553,7 +1377,6 @@ section[id], #top { scroll-margin-top: 6.875rem; }
   .blob { animation: none; }
   .reveal { transition: opacity 0.4s ease; transform: none; }
   .scroll-indicator span { animation: none; }
-  .quote-fan-card, .quote-fan-card::after, .quote-fan-card::before { transition: opacity 0.3s ease; }
   .social-btn { transition: border-color 0.3s ease; }
   .social-btn:hover, .social-btn:focus-visible { transform: none; }
   /* video cards: no lift or grow, only the border/glow colour and the play button fill */
