@@ -710,7 +710,6 @@ const faqs = [
   { q: "What happens if my feedback is unclear or outside the brief?", a: "We may pause the edit and ask you to clarify before continuing. It keeps the result accurate and saves you from unnecessary extra rounds." },
   { q: "Is my footage safe with CONTENTGROWN?", a: "Yes. Your files are stored securely and only the team members working on your project can access them. We never share your footage or personal information with third parties without your consent." },
   { q: "What if I'm not happy with the final video?", a: "Tell us what is off. Your package includes revision rounds for exactly this, and our editors will work through your feedback to get the video where you need it." },
-  { q: "Can I pick how long my video is?", a: "Yes. You can choose 30 seconds, 60 seconds, or up to 90 seconds for each video." },
 ];
 const faqList = document.getElementById("faq-list");
 faqs.forEach(f => {
