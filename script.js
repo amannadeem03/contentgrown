@@ -530,9 +530,17 @@ const videoTestimonials = [
   { name: "Ramses", file: "assets/testimonials/videos/ramses-testimonial.mp4" },
 ];
 const proofVideoGrid = document.getElementById("proof-video-grid");
+// The three portrait cards fade in together as one group. (The reveal class sits
+// on the grid, not on each card, so the cards' own hover "pop" transform is never
+// fighting the reveal transform, and a card scrolled in sideways on phones is
+// never stuck invisible.)
+proofVideoGrid.classList.add("reveal");
 videoTestimonials.forEach(t => {
   const card = document.createElement("div");
-  card.className = "proof-video-card reveal";
+  card.className = "proof-video-card";
+  card.tabIndex = 0;
+  card.setAttribute("role", "button");
+  card.setAttribute("aria-label", `Play ${t.name}'s video testimonial`);
   card.innerHTML = `
     <video muted loop playsinline preload="metadata">
       <source src="${t.file}" type="video/mp4">
@@ -543,6 +551,13 @@ videoTestimonials.forEach(t => {
   const video = card.querySelector("video");
   registerAutoplayVideo(video);
   card.addEventListener("click", () => openLightbox(t.file));
+  card.addEventListener("keydown", (e) => {
+    if (e.target !== card) return;
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      openLightbox(t.file);
+    }
+  });
   proofVideoGrid.appendChild(card);
 });
 
@@ -990,42 +1005,6 @@ if (finePointer) {
     btn.addEventListener("mouseleave", () => {
       btn.style.setProperty("--mx", "50%");
       btn.style.setProperty("--my", "-30%");
-    });
-  });
-}
-
-/* ---------- Cursor-reactive card tilt ---------- */
-// .work-card is deliberately excluded: those cards now play their video on
-// hover, and skewing a *playing* video through a 3D perspective transform
-// reads as glitchy rather than premium - it only looked good back when
-// hover just showed a static poster frame.
-if (finePointer) {
-  const tiltMax = 10; // degrees
-  document.querySelectorAll(".proof-video-card").forEach((card) => {
-    let queued = false;
-    let rotX = 0, rotY = 0;
-    card.style.transformStyle = "preserve-3d";
-    card.style.willChange = "transform";
-    card.addEventListener("mouseenter", () => {
-      card.style.transition = "transform 0.06s linear";
-    });
-    card.addEventListener("mousemove", (e) => {
-      const rect = card.getBoundingClientRect();
-      const px = (e.clientX - rect.left) / rect.width - 0.5;
-      const py = (e.clientY - rect.top) / rect.height - 0.5;
-      rotY = px * tiltMax * 2;
-      rotX = -py * tiltMax * 2;
-      if (!queued) {
-        queued = true;
-        requestAnimationFrame(() => {
-          card.style.transform = `perspective(600px) rotateX(${rotX}deg) rotateY(${rotY}deg) translateY(-4px) scale(1.03)`;
-          queued = false;
-        });
-      }
-    });
-    card.addEventListener("mouseleave", () => {
-      card.style.transition = "transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)";
-      card.style.transform = "";
     });
   });
 }

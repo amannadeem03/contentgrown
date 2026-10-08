@@ -1065,46 +1065,52 @@ section[id], #top { scroll-margin-top: 6.875rem; }
 /* ---------- Proof / testimonials ---------- */
 .proof { padding: 5rem 0; }
 
+/* Client video testimonials: three vertical (9:16) cards, as the originals were
+   shot. Three across and centred; each card is capped at 18rem wide (about 32rem
+   tall) so they never get absurdly tall. On phones the row becomes a swipeable
+   snap-scroll strip (see the 560px block in the Responsive section).
+   The .reveal fade lives on the grid (added in script.js), not on the cards, so
+   the hover "pop" below is the only transform on a card. */
 .proof-video-grid {
+  --ease-pop: cubic-bezier(0.2, 0.9, 0.3, 1.2);
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.25rem;
-  margin-bottom: 3.5rem;
+  grid-template-columns: repeat(3, minmax(0, 18rem));
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 4rem;
 }
 .proof-video-card {
   position: relative;
-  aspect-ratio: 16/10;
+  aspect-ratio: 9/16;
   border-radius: 1rem;
   overflow: hidden;
   border: 1px solid var(--line);
   cursor: var(--cursor-img), pointer;
   background: var(--surface);
-  transition: border-color 0.4s var(--ease-soft), transform 0.4s var(--ease-soft);
+  /* the glow is this card's own box-shadow, which sits outside its overflow clip */
+  box-shadow: 0 0 0 0 rgba(248, 98, 21, 0);
+  transition: transform 0.35s var(--ease-pop), border-color 0.35s var(--ease-soft), box-shadow 0.35s var(--ease-soft);
 }
-.proof-video-card:hover { border-color: var(--line-soft); transform: translateY(-2px); }
 .proof-video-card video { width: 100%; height: 100%; object-fit: cover; }
 .proof-video-card::after {
   content: "";
   position: absolute; inset: 0;
   background: linear-gradient(180deg, rgba(0, 0, 0, 0.12) 0%, rgba(0, 0, 0, 0.55) 100%);
   pointer-events: none;
+  transition: opacity 0.35s var(--ease-soft);
 }
 .proof-play-icon {
   position: absolute; top: 50%; left: 50%;
   transform: translate(-50%, -50%);
   width: 2.875rem; height: 2.875rem;
   border-radius: 50%;
-  background: rgba(10, 10, 9, 0.5);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(10, 10, 9, 0.55);
   border: 1px solid rgba(255, 255, 255, 0.16);
   display: flex; align-items: center; justify-content: center;
   z-index: 1;
-  transition: background 0.3s var(--ease-soft), transform 0.3s var(--ease-soft);
+  transition: background 0.3s var(--ease-soft), transform 0.35s var(--ease-pop);
 }
-.proof-play-icon svg { width: 1rem; height: 1rem; color: var(--chalk); }
-.proof-video-card:hover .proof-play-icon { background: rgba(248, 98, 21, 0.85); transform: translate(-50%, -50%) scale(1.08); }
-.proof-video-card:hover .proof-play-icon svg { color: #0a0a09; }
+.proof-play-icon svg { width: 1rem; height: 1rem; color: var(--chalk); transition: color 0.3s var(--ease-soft); }
 .proof-video-name {
   position: absolute; bottom: 0.875rem; left: 1rem;
   z-index: 1;
@@ -1113,7 +1119,34 @@ section[id], #top { scroll-margin-top: 6.875rem; }
   font-size: 0.85rem;
   letter-spacing: 0.01em;
   color: var(--chalk);
+  text-shadow: 0 1px 0.5rem rgba(0, 0, 0, 0.55);
 }
+/* Hover / keyboard focus = a confident pop: the card lifts and grows, the border
+   and a soft glow go brand orange, the overlay eases off, the play button swells
+   and fills orange. Transform, opacity, colour and shadow only - nothing around
+   the card moves. Hover is skipped on touch screens; focus always applies. */
+@media (hover: hover) {
+  .proof-video-card:hover {
+    transform: translateY(-0.5rem) scale(1.05);
+    z-index: 2;
+    border-color: var(--amber);
+    box-shadow: 0 1.5rem 3rem -1rem rgba(248, 98, 21, 0.45);
+  }
+  .proof-video-card:hover::after { opacity: 0.65; }
+  .proof-video-card:hover .proof-play-icon { background: var(--amber); transform: translate(-50%, -50%) scale(1.15); }
+  .proof-video-card:hover .proof-play-icon svg { color: #0a0a09; }
+}
+.proof-video-card:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 3px;
+  transform: translateY(-0.5rem) scale(1.05);
+  z-index: 2;
+  border-color: var(--amber);
+  box-shadow: 0 1.5rem 3rem -1rem rgba(248, 98, 21, 0.45);
+}
+.proof-video-card:focus-visible::after { opacity: 0.65; }
+.proof-video-card:focus-visible .proof-play-icon { background: var(--amber); transform: translate(-50%, -50%) scale(1.15); }
+.proof-video-card:focus-visible .proof-play-icon svg { color: #0a0a09; }
 
 /* Text testimonials: a fanned deck of review cards (built in script.js).
    One card sits in front, its neighbours fan out behind it. Every position is
@@ -1419,7 +1452,9 @@ section[id], #top { scroll-margin-top: 6.875rem; }
   padding: 2.5rem;
 }
 .lightbox.open { display: flex; }
-.lightbox video { max-height: 88vh; max-width: 100%; border-radius: 0.875rem; }
+/* portrait clips: height-limited and centred, never cropped. The dvh line keeps a tall clip
+   inside the visible area on phones whose browser bars make 100vh taller than the screen. */
+.lightbox video { max-height: 88vh; max-height: min(88vh, calc(100dvh - 5rem)); max-width: 100%; border-radius: 0.875rem; }
 .lightbox-close {
   position: absolute; top: 1.5rem; right: 1.75rem;
   background: none; border: none;
@@ -1472,14 +1507,30 @@ section[id], #top { scroll-margin-top: 6.875rem; }
   .services-list { width:100%; height:auto; display:grid; gap:0.75rem; perspective:none; }
   .service-row, .service-row.active, .service-row.previous, .service-row.next { position:relative; left:auto; top:auto; width:100%; height:auto; min-height:11.875rem; transform:none; opacity:1; filter:none; pointer-events:auto; }
   .services-dots, .services-note { display:none; }
-  .proof-video-grid { grid-template-columns: repeat(2, 1fr); }
+  /* tablet: still three across and centred, just smaller (15rem cap, about 27rem tall) */
+  .proof-video-grid { grid-template-columns: repeat(3, minmax(0, 15rem)); gap: 1rem; margin-bottom: 3.5rem; }
   .quote-fan { --qf-w: min(38rem, 76vw); }
   .quote-fan-text { font-size: 1.06rem; }
 }
 @media (max-width: 560px) {
   .stat-item { min-width: 8.25rem; padding: 1rem 0.75rem; }
   .work-grid { grid-template-columns: repeat(2, 1fr); }
-  .proof-video-grid { grid-template-columns: 1fr; }
+  /* phones: one swipeable strip of vertical cards that snap to the left gutter, with the
+     next card peeking in. It bleeds out past the section's 1.5rem side padding to the screen
+     edges, and the padding gives a lifted/glowing card room inside the scroll clip. */
+  .proof-video-grid {
+    display: flex;
+    justify-content: flex-start;
+    gap: 1rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 1.5rem;
+    scrollbar-width: none;
+    padding: 1.25rem 1.5rem 3rem;
+    margin: -1.25rem -1.5rem 0.5rem;
+  }
+  .proof-video-grid::-webkit-scrollbar { display: none; }
+  .proof-video-card { flex: 0 0 min(15rem, 68vw); scroll-snap-align: start; }
   .quote-fan { --qf-w: 84vw; }
   .quote-fan-viewport { padding: 2.25rem 0 1.75rem; }
   .quote-fan-card { min-height: 10.25rem; padding: 1.4rem 1.25rem; border-radius: 0.875rem; }
@@ -1508,4 +1559,9 @@ section[id], #top { scroll-margin-top: 6.875rem; }
   .quote-fan-card, .quote-fan-card::after, .quote-fan-card::before { transition: opacity 0.3s ease; }
   .social-btn { transition: border-color 0.3s ease; }
   .social-btn:hover, .social-btn:focus-visible { transform: none; }
+  /* video cards: no lift or grow, only the border/glow colour and the play button fill */
+  .proof-video-card { transition: border-color 0.3s ease, box-shadow 0.3s ease; }
+  .proof-video-card:hover, .proof-video-card:focus-visible { transform: none; }
+  .proof-play-icon { transition: background 0.3s ease; }
+  .proof-video-card:hover .proof-play-icon, .proof-video-card:focus-visible .proof-play-icon { transform: translate(-50%, -50%); }
 }
