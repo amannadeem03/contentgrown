@@ -549,32 +549,52 @@ videoTestimonials.forEach(t => {
 /* Text testimonials: a fanned deck of review cards. One card sits in front,
    the neighbours fan out behind it. Arrows, swipe, arrow keys, clicking a side
    card, or the slow auto-advance bring the others forward, so all 15 are
-   reachable. The front card opens enlarged. Positions are plain CSS
-   (data-pos on each card); JS only flips attributes when the card changes. */
+   reachable. Cards are real HTML text. Positions are plain CSS (data-pos on
+   each card); JS only flips attributes when the card changes. */
 (function () {
   const root = document.getElementById("proof-quote-grid");
   if (!root) return;
-  // [width, height] of text-01 ... text-15, so layout is stable before they load.
-  const dims = [[1268, 114], [1210, 150], [1202, 132], [1254, 290], [1258, 156], [1216, 114], [1236, 172], [1226, 136], [1202, 120], [1258, 114], [1250, 202], [1238, 126], [1230, 158], [1172, 136], [1240, 148]];
-  const total = dims.length;
+  // One string per card, in display order. A blank line ("\n\n") starts a new paragraph.
+  const quotes = [
+    "Great work! The team was very keen, very enthusiastic and also fast to deliver good quality work. We hope to work together with them again in the future.",
+    "Very good video editing team. Easy to work with, and they understand every instruction stated to them. Glad to hire them for this project.",
+    "Great editing team! They really follow all your instructions and revisions. Recommended for any client looking for a video editing team.",
+    "I am delighted to share my remarkable experience working with the CONTENTGROWN team. If you are looking for a team with outstanding communication skills and a strong commitment to timeliness, they are the perfect fit for your project.\n\nThroughout our collaboration, the team demonstrated exceptional communication skills that greatly enhanced the editing process.",
+    "The team provided great communication. They handled this content very professionally and in a timely manner. I plan to continue my work with them.",
+    "Good and fast! The team took my feedback and implemented it. They were very friendly and tried their best to make me happy with the result.",
+    "Wonderful experience with the CONTENTGROWN team. They delivered the agreed upon product way ahead of schedule. Communication was excellent. Would definitely work with them again in the future.",
+    "Focused on understanding client needs and delivering to expectation. We will definitely work with the team again.",
+    "Great experience with the team - super responsive, good quality work - great team :)",
+    "I would highly recommend this video editing team. They did a fantastic job with my IG and TikTok reels. They can edit at a very high level. Will use again!",
+    "Best editing team I've worked with on Upwork! They are flexible and do a great job making any recommended changes. They are very easygoing and do fantastic work. Highly recommended! Only ending my contract to make changes to increase their contract's length.",
+    "Amazing, friendly, hardworking partners to work with, would recommend the team to anyone, they seriously have amazing talent!!!",
+    "Great working with the CONTENTGROWN team. They have a large range of editing skills and were able to complete my jobs to my satisfaction. Highly recommended.",
+    "The CONTENTGROWN team are great editors who did an excellent job on my cinematic Instagram reels. Strong quality work, great attention to detail, and very easy to work with. Definitely recommend them.",
+    "The team are great professionals, did exactly what was needed and even above expectations, happy with the result. Also, they're great communicators and nice people, 100% highly recommended!",
+  ];
+  const total = quotes.length;
   const half = Math.floor(total / 2);
   const pad = n => String(n).padStart(2, "0");
+  const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const quotePath = "M9.2 5C5.6 6.3 3.5 9.2 3.5 13.2V19h6.3v-6.1H6.9c0-2.2 1-3.8 3.1-4.7L9.2 5zm10.3 0c-3.6 1.3-5.7 4.2-5.7 8.2V19h6.3v-6.1h-2.9c0-2.2 1-3.8 3.1-4.7L19.5 5z";
   const icon = {
-    quote: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.2 5C5.6 6.3 3.5 9.2 3.5 13.2V19h6.3v-6.1H6.9c0-2.2 1-3.8 3.1-4.7L9.2 5zm10.3 0c-3.6 1.3-5.7 4.2-5.7 8.2V19h6.3v-6.1h-2.9c0-2.2 1-3.8 3.1-4.7L19.5 5z"/></svg>',
-    zoom: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2M11 8.3v5.4M8.3 11h5.4"/></svg>',
+    quoteOpen: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="${quotePath}"/></svg>`,
+    // closing mark = the opening mark turned half a circle
+    quoteClose: `<svg viewBox="0 0 24 24" fill="currentColor"><path transform="rotate(180 12 12)" d="${quotePath}"/></svg>`,
     prev: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
     next: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>',
   };
 
   let cardsHtml = "";
   let ticksHtml = "";
-  dims.forEach((d, i) => {
-    cardsHtml += `<button class="quote-fan-card" type="button" data-index="${i}" tabindex="-1">
-      <span class="quote-fan-badge" aria-hidden="true">${icon.quote}</span>
-      <span class="quote-fan-zoom" aria-hidden="true">${icon.zoom}</span>
-      <img src="assets/testimonials/images/text-${pad(i + 1)}.jpeg" alt="Client testimonial ${i + 1}" width="${d[0]}" height="${d[1]}" loading="lazy" decoding="async" draggable="false">
-    </button>`;
-    ticksHtml += `<span class="quote-fan-tick" data-index="${i}"></span>`;
+  quotes.forEach((text, i) => {
+    const paragraphs = text.split("\n\n").map(p => `<p>${esc(p)}</p>`).join("");
+    cardsHtml += `<figure class="quote-fan-card" data-index="${i}" role="group" aria-roledescription="slide" aria-label="${i + 1} of ${total}">
+      <span class="quote-fan-badge" aria-hidden="true">${icon.quoteOpen}</span>
+      <span class="quote-fan-badge quote-fan-badge-close" aria-hidden="true">${icon.quoteClose}</span>
+      <blockquote class="quote-fan-text">${paragraphs}</blockquote>
+    </figure>`;
+    ticksHtml += `<button class="quote-fan-tick" type="button" data-index="${i}" tabindex="-1" aria-label="Show testimonial ${i + 1} of ${total}"></button>`;
   });
   root.innerHTML = `
     <div class="quote-fan-viewport">
@@ -584,7 +604,7 @@ videoTestimonials.forEach(t => {
       <button class="quote-fan-arrow" type="button" data-step="-1" aria-label="Previous testimonial">${icon.prev}</button>
       <div class="quote-fan-meter">
         <span class="quote-fan-count" aria-live="off"><b>01</b> / ${pad(total)}</span>
-        <span class="quote-fan-ticks" aria-hidden="true">${ticksHtml}</span>
+        <span class="quote-fan-ticks" role="group" aria-label="Choose a testimonial">${ticksHtml}</span>
       </div>
       <button class="quote-fan-arrow" type="button" data-step="1" aria-label="Next testimonial">${icon.next}</button>
     </div>`;
@@ -600,34 +620,32 @@ videoTestimonials.forEach(t => {
     cards.forEach((card, i) => {
       const d = ((i - cur + total + half) % total) - half;
       const pos = Math.max(-3, Math.min(3, d));
-      const hidden = Math.abs(pos) > 2;
       card.dataset.pos = pos;
-      card.tabIndex = pos === 0 ? 0 : -1;
-      card.setAttribute("aria-label", (pos === 0 ? "Enlarge client testimonial " : "Show client testimonial ") + (i + 1));
-      card.setAttribute("aria-hidden", hidden ? "true" : "false");
-      card.inert = hidden;
+      // only the front card is read out; the ones behind are decoration for screen readers
+      card.setAttribute("aria-hidden", pos === 0 ? "false" : "true");
+      card.inert = Math.abs(pos) > 2;   // faded-out cards can't be clicked or selected
     });
-    ticks.forEach((t, i) => t.classList.toggle("active", i === cur));
+    ticks.forEach((t, i) => {
+      t.classList.toggle("active", i === cur);
+      if (i === cur) t.setAttribute("aria-current", "true"); else t.removeAttribute("aria-current");
+    });
     countNum.textContent = pad(cur + 1);
   }
 
-  /* Auto-advance: slow, paused while hovered / focused / off-screen / tab hidden
-     / modal open, and switched off for good once the visitor takes over. */
+  /* Auto-advance: slow, paused while hovered / focused / off-screen / tab hidden,
+     and switched off for good once the visitor takes over. */
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  let timer = 0, inView = false, hovering = false, focused = false, modalOpen = false, userTookOver = false;
+  let timer = 0, inView = false, hovering = false, focused = false, userTookOver = false;
   function schedule() {
     clearTimeout(timer);
-    if (reduceMotion || userTookOver || !inView || hovering || focused || modalOpen || document.hidden) return;
-    const dwell = 4200 + Math.max(0, dims[cur][1] - 110) * 28;   // longer reviews stay up longer
+    if (reduceMotion || userTookOver || !inView || hovering || focused || document.hidden) return;
+    const dwell = 4200 + Math.max(0, quotes[cur].length - 110) * 20;   // longer reviews stay up longer
     timer = setTimeout(() => go(1, true), dwell);
   }
   function go(step, auto) {
     cur = (cur + step + total) % total;
     if (!auto) { userTookOver = true; countEl.setAttribute("aria-live", "polite"); }
-    const hadFocus = stage.contains(document.activeElement);
     update();
-    if (hadFocus) cards[cur].focus({ preventScroll: true });
-    if (modal.open) modal.show(cur);
     schedule();
   }
   function goTo(index) {
@@ -635,76 +653,12 @@ videoTestimonials.forEach(t => {
     if (step) go(step);
   }
 
-  /* Enlarged view: a small image-only modal (kept separate from the video lightbox). */
-  const modal = {
-    open: false, el: null, img: null, count: null, opener: null,
-    build() {
-      const el = document.createElement("div");
-      el.className = "quote-fan-modal";
-      el.setAttribute("role", "dialog");
-      el.setAttribute("aria-modal", "true");
-      el.setAttribute("aria-label", "Client testimonial");
-      el.innerHTML = `
-        <button class="quote-fan-modal-close" type="button" aria-label="Close">&times;</button>
-        <div class="quote-fan-modal-card"><img alt="" draggable="false"></div>
-        <div class="quote-fan-modal-bar">
-          <button class="quote-fan-arrow" type="button" data-step="-1" aria-label="Previous testimonial">${icon.prev}</button>
-          <span class="quote-fan-count"><b>01</b> / ${pad(total)}</span>
-          <button class="quote-fan-arrow" type="button" data-step="1" aria-label="Next testimonial">${icon.next}</button>
-        </div>`;
-      document.body.appendChild(el);
-      this.el = el;
-      this.img = el.querySelector("img");
-      this.count = el.querySelector(".quote-fan-count b");
-      el.addEventListener("click", e => {
-        if (e.target === el || e.target.closest(".quote-fan-modal-close")) return this.close();
-        const arrow = e.target.closest(".quote-fan-arrow");
-        if (arrow) go(Number(arrow.dataset.step));
-      });
-      el.addEventListener("keydown", e => {
-        if (e.key === "Escape") this.close();
-        else if (e.key === "ArrowLeft") go(-1);
-        else if (e.key === "ArrowRight") go(1);
-        else if (e.key === "Tab") {
-          const f = [...el.querySelectorAll("button")];
-          const first = f[0], last = f[f.length - 1];
-          if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-          else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-        }
-      });
-    },
-    show(i) {
-      this.img.src = `assets/testimonials/images/text-${pad(i + 1)}.jpeg`;
-      this.img.alt = `Client testimonial ${i + 1}`;
-      this.count.textContent = pad(i + 1);
-    },
-    openAt(i, opener) {
-      if (!this.el) this.build();
-      this.opener = opener;
-      this.open = true;
-      modalOpen = true;
-      this.show(i);
-      this.el.classList.add("open");
-      this.lockedByUs = !document.body.classList.contains("scroll-locked");
-      document.body.classList.add("scroll-locked");
-      this.el.querySelector(".quote-fan-modal-close").focus({ preventScroll: true });
-      schedule();
-    },
-    close() {
-      if (!this.open) return;
-      this.open = false;
-      modalOpen = false;
-      this.el.classList.remove("open");
-      if (this.lockedByUs) document.body.classList.remove("scroll-locked");
-      if (this.opener) this.opener.focus({ preventScroll: true });
-      schedule();
-    },
-  };
-
-  /* Input: click, arrows, keys, swipe */
+  /* Input: click a side card, arrows, ticks, keys, swipe */
   let sx = 0, sy = 0, tracking = false, swiped = false;
   stage.addEventListener("pointerdown", e => {
     if (e.button > 0) return;
+    // a mouse drag over the front card's text is a text selection, not a swipe
+    if (e.pointerType === "mouse" && e.target.closest(".quote-fan-card[data-pos='0'] .quote-fan-text")) { tracking = false; return; }
     sx = e.clientX; sy = e.clientY; tracking = true; swiped = false;
   });
   stage.addEventListener("pointerup", e => {
@@ -723,7 +677,7 @@ videoTestimonials.forEach(t => {
     const card = e.target.closest(".quote-fan-card");
     if (!card) return;
     const i = Number(card.dataset.index);
-    if (i === cur) modal.openAt(i, card); else goTo(i);
+    if (i !== cur) goTo(i);
   });
   root.addEventListener("click", e => {
     const arrow = e.target.closest(".quote-fan-arrow");
