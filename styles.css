@@ -349,13 +349,21 @@ section[id], #top { scroll-margin-top: 6.875rem; }
     linear-gradient(155deg, rgba(248, 98, 21, 0.26), rgba(248, 98, 21, 0.06));
   border-color: rgba(248, 98, 21, 0.32);
 }
-/* The header and hero CTAs used to get their orange outline from a light orbiting the border;
-   that is gone, so the outline is now a steady brand-orange ring. */
 .nav-cta.btn-glass.btn-solid,
 .hero-cta.btn-glass.btn-solid {
   background: linear-gradient(180deg, rgba(20, 19, 17, 0.85), rgba(10, 10, 9, 0.92));
-  border-color: rgba(248, 98, 21, 0.45);
+  border-color: rgba(255, 255, 255, 0.08);
   color: var(--chalk);
+}
+
+/* CTA: a bright segment continuously revolves around the border ring (always on, idle, not tied
+   to the cursor). Only the registered custom property --beam-angle animates, on the ::after
+   overlay, so it needs no JS and causes no layout. The overlay is inside the button, so it
+   scales with the hover pop. */
+@property --beam-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
 }
 .nav-cta.btn-glass .btn-label,
 .hero-cta.btn-glass .btn-label {
@@ -363,6 +371,35 @@ section[id], #top { scroll-margin-top: 6.875rem; }
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+}
+.btn-glass.btn-solid::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--beam-angle),
+    transparent 0deg 220deg,
+    rgba(248, 98, 21, 0.12) 240deg,
+    rgba(248, 98, 21, 0.5) 260deg,
+    var(--amber) 285deg,
+    var(--amber) 345deg,
+    rgba(248, 98, 21, 0.5) 360deg
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 1;
+  filter: drop-shadow(0 0 3px rgba(248, 98, 21, 0.38));
+  pointer-events: none;
+  animation: beam-spin 5.2s linear infinite;
+}
+@keyframes beam-spin {
+  to { --beam-angle: 360deg; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn-glass.btn-solid::after { animation: none; }
 }
 
 @media (hover: hover) and (pointer: fine) {
