@@ -459,12 +459,12 @@ const pricingPlans = {
     label: "Standard Editing",
     intro: "For polished, retention-focused short-form content.",
     features: [
-      { icon: "timer", text: "Up to 90 seconds per video" },
-      { icon: "captions", text: "Professional captions (dynamic & styled)" },
-      { icon: "broll", text: "B-roll footage (stock or provided)" },
-      { icon: "music", text: "Music & basic sound design" },
-      { icon: "pencil", text: "2 rounds of revisions per video" },
-      { icon: "clock", text: "48–72 hour turnaround per video" },
+      { icon: "spark", text: "Up to 90 seconds per video" },
+      { icon: "spark", text: "Professional captions (dynamic & styled)" },
+      { icon: "spark", text: "B-roll footage (stock or provided)" },
+      { icon: "spark", text: "Music & basic sound design" },
+      { icon: "spark", text: "2 rounds of revisions per video" },
+      { icon: "spark", text: "48–72 hour turnaround per video" },
     ],
     plans: [
       { name: "Starter", videos: 5, perVideo: 60, total: 300, best: "Ideal for getting a reliable content rhythm in place." },
