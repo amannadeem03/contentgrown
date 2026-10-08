@@ -559,16 +559,16 @@ videoTestimonials.forEach(t => {
     "Great work! The team was very keen, very enthusiastic and also fast to deliver good quality work. We hope to work together with them again in the future.",
     "Very good video editing team. Easy to work with, and they understand every instruction stated to them. Glad to hire them for this project.",
     "Great editing team! They really follow all your instructions and revisions. Recommended for any client looking for a video editing team.",
-    "I am delighted to share my remarkable experience working with the CONTENTGROWN team. If you are looking for a team with outstanding communication skills and a strong commitment to timeliness, they are the perfect fit for your project.\n\nThroughout our collaboration, the team demonstrated exceptional communication skills that greatly enhanced the editing process.",
-    "The team provided great communication. They handled this content very professionally and in a timely manner. I plan to continue my work with them.",
-    "Good and fast! The team took my feedback and implemented it. They were very friendly and tried their best to make me happy with the result.",
+    "I am delighted to share my remarkable experience working with the CONTENTGROWN team. If you are looking for a team with outstanding communication skills and a strong commitment to timeliness, they are the perfect fit for your project.\n\nThroughout our collaboration, Aman and the team demonstrated exceptional communication skills that greatly enhanced the editing process.",
+    "Aman and the team provided great communication. They handled this content very professionally and in a timely manner. I plan to continue my work with them.",
+    "Good and fast! Aman and the team took my feedback and implemented it. They were very friendly and tried their best to make me happy with the result.",
     "Wonderful experience with the CONTENTGROWN team. They delivered the agreed upon product way ahead of schedule. Communication was excellent. Would definitely work with them again in the future.",
     "Focused on understanding client needs and delivering to expectation. We will definitely work with the team again.",
     "Great experience with the team - super responsive, good quality work - great team :)",
     "I would highly recommend this video editing team. They did a fantastic job with my IG and TikTok reels. They can edit at a very high level. Will use again!",
     "Best editing team I've worked with on Upwork! They are flexible and do a great job making any recommended changes. They are very easygoing and do fantastic work. Highly recommended! Only ending my contract to make changes to increase their contract's length.",
     "Amazing, friendly, hardworking partners to work with, would recommend the team to anyone, they seriously have amazing talent!!!",
-    "Great working with the CONTENTGROWN team. They have a large range of editing skills and were able to complete my jobs to my satisfaction. Highly recommended.",
+    "Great working with Aman and the CONTENTGROWN team. They have a large range of editing skills and were able to complete my jobs to my satisfaction. Highly recommended.",
     "The CONTENTGROWN team are great editors who did an excellent job on my cinematic Instagram reels. Strong quality work, great attention to detail, and very easy to work with. Definitely recommend them.",
     "The team are great professionals, did exactly what was needed and even above expectations, happy with the result. Also, they're great communicators and nice people, 100% highly recommended!",
   ];
@@ -588,7 +588,13 @@ videoTestimonials.forEach(t => {
   let cardsHtml = "";
   let ticksHtml = "";
   quotes.forEach((text, i) => {
-    const paragraphs = text.split("\n\n").map(p => `<p>${esc(p)}</p>`).join("");
+    // straight quotation marks sit inline, as in the original reviews: one opens
+    // the first paragraph and one closes the last (plain characters, so they
+    // select, copy and read out with the text)
+    const parts = text.split("\n\n");
+    parts[0] = `"${parts[0]}`;
+    parts[parts.length - 1] += `"`;
+    const paragraphs = parts.map(p => `<p>${esc(p)}</p>`).join("");
     cardsHtml += `<figure class="quote-fan-card" data-index="${i}" role="group" aria-roledescription="slide" aria-label="${i + 1} of ${total}">
       <span class="quote-fan-badge" aria-hidden="true">${icon.quoteOpen}</span>
       <span class="quote-fan-badge quote-fan-badge-close" aria-hidden="true">${icon.quoteClose}</span>
