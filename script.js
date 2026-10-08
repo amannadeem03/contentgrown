@@ -776,30 +776,44 @@ faqs.forEach(f => {
     return;
   }
 
-  // Spring: bubbleX eases toward the active item's position with a touch
-  // of overshoot before settling, rather than snapping or tweening linearly.
+  // Glide: bubbleX eases toward the active item's position with a critically
+  // damped spring - quick start, soft landing, and never any overshoot,
+  // bounce or wobble (even if the target changes mid-flight).
   let bubbleX = items[0]?.offsetLeft || 0;
   let bubbleVel = 0;
   let springRaf = null;
   let lastTime = null;
-  const STIFFNESS = 210;
-  const DAMPING = 21;
+  const OMEGA = 20; // glide speed (rad/s): settles in about a third of a second
+
+  /* critical-spring-step:begin */
+  // Exact (closed-form) step of a critically damped spring, so it is smooth
+  // and identical at any frame rate. `offset` is the distance from the target.
+  function criticalSpringStep(offset, vel, omega, dt) {
+    // If the bubble is already heading for the target faster than a critically
+    // damped glide would allow (target changed mid-flight), shed the extra
+    // speed so it can never carry past the target.
+    if (offset * (vel + omega * offset) < 0) vel = -omega * offset;
+    const b = vel + omega * offset;
+    const decay = Math.exp(-omega * dt);
+    return [(offset + b * dt) * decay, (b - omega * (offset + b * dt)) * decay];
+  }
+  /* critical-spring-step:end */
 
   function springTick(now) {
     if (lastTime === null) lastTime = now;
-    const dt = Math.min((now - lastTime) / 1000, 0.05);
+    const dt = Math.max(0, (now - lastTime) / 1000);
     lastTime = now;
     const target = items[activeIndex]?.offsetLeft || 0;
+    const [offset, vel] = criticalSpringStep(bubbleX - target, bubbleVel, OMEGA, dt);
+    bubbleX = target + offset;
+    bubbleVel = vel;
     const dx = target - bubbleX;
-    const accel = dx * STIFFNESS - bubbleVel * DAMPING;
-    bubbleVel += accel * dt;
-    bubbleX += bubbleVel * dt;
 
     const stretch = clamp(1 + Math.min(Math.abs(bubbleVel) * 0.00028, 0.2));
     bar.style.setProperty("--bubble-x", `${bubbleX}px`);
     bar.style.setProperty("--bubble-stretch", stretch.toFixed(3));
 
-    if (Math.abs(dx) > 0.4 || Math.abs(bubbleVel) > 1) {
+    if (Math.abs(dx) > 0.05 || Math.abs(bubbleVel) > 0.5) {
       springRaf = requestAnimationFrame(springTick);
     } else {
       bubbleX = target;
