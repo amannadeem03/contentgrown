@@ -1381,6 +1381,10 @@ section[id], #top { scroll-margin-top: 6.875rem; }
   display: flex;
   align-items: center;
   gap: 0.8rem;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  text-align: left;
   padding: 0.7rem 0.85rem 0.7rem 0.7rem;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 0.95rem;
@@ -1410,6 +1414,94 @@ section[id], #top { scroll-margin-top: 6.875rem; }
 .choose-opt-arrow { flex: none; display: grid; color: var(--muted); transition: color 0.3s var(--ease-soft), transform 0.3s var(--ease); }
 .choose-opt-arrow svg { width: 1rem; height: 1rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .choose-opt:hover .choose-opt-arrow { color: var(--amber-light); transform: translateX(0.2rem); }
+
+/* Steps: the dialog swaps between the options, the payment-link details form and the confirmation.
+   A step that is switched to fades in (opacity + a few px of transform only; no bounce). */
+.choose-step--in { animation: choose-step-in 0.2s var(--ease-soft) backwards; }
+.choose-bubble:focus, .choose-done-title:focus { outline: none; }
+.choose-pack {
+  margin: 0.6rem 0 0;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.8rem;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+.choose-pack strong { color: var(--chalk); font-weight: 700; }
+.choose-form { display: grid; gap: 0.8rem; margin-top: 1rem; }
+.choose-field { display: grid; gap: 0.35rem; }
+.choose-field label { font-size: 0.8rem; font-weight: 600; line-height: 1.3; color: rgba(247, 246, 243, 0.85); }
+.choose-field input {
+  width: 100%;
+  min-width: 0;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 0.8rem;
+  background: rgba(10, 9, 8, 0.55);
+  color: var(--chalk);
+  font: inherit;
+  font-size: max(16px, 1rem); /* 16px minimum so phones do not zoom the page when a field is focused */
+  line-height: 1.3;
+  outline: none;
+  box-shadow: none;
+  transition: border-color 0.2s var(--ease-soft);
+}
+.choose-field input::placeholder { color: rgba(247, 246, 243, 0.38); }
+.choose-field input[aria-invalid="true"] { border-color: #ff9d8f; }
+.choose-field input:focus, .choose-field input[aria-invalid="true"]:focus { border-color: var(--amber); }
+/* Browser autofill would otherwise paint its own pale background over the dark field. */
+.choose-field input:-webkit-autofill {
+  -webkit-text-fill-color: var(--chalk);
+  caret-color: var(--chalk);
+  box-shadow: 0 0 0 100px #14110f inset;
+}
+.choose-error { color: #ff9d8f; font-size: 0.78rem; line-height: 1.35; }
+.choose-actions { display: grid; gap: 0.35rem; margin-top: 0.3rem; }
+.choose-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0.85rem 1.25rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  cursor: var(--cursor-img), pointer;
+  transition: background 0.25s var(--ease-soft), border-color 0.25s var(--ease-soft), color 0.25s var(--ease-soft);
+}
+.choose-btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.choose-btn--primary { background: var(--amber); color: #120a05; }
+.choose-btn--primary:hover { background: #ff7a34; }
+.choose-btn--secondary { border-color: rgba(255, 255, 255, 0.14); background: rgba(10, 9, 8, 0.55); color: var(--chalk); }
+.choose-btn--secondary:hover { border-color: rgba(248, 98, 21, 0.55); background: rgba(248, 98, 21, 0.1); }
+.choose-btn--ghost { padding-block: 0.6rem; background: none; color: var(--muted); font-weight: 600; }
+.choose-btn--ghost:hover { color: var(--chalk); }
+.choose-privacy { color: var(--muted); font-size: 0.75rem; line-height: 1.4; text-align: center; }
+.choose-done { text-align: center; padding-top: 0.35rem; }
+.choose-check {
+  display: grid;
+  place-items: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  margin: 0 auto 0.9rem;
+  border-radius: 50%;
+  background: var(--amber);
+  color: #120a05;
+}
+.choose-check svg { width: 1.6rem; height: 1.6rem; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.choose-done-title { font-size: 1.2rem; line-height: 1.25; }
+.choose-done-text { margin: 0.6rem 0 0; color: rgba(247, 246, 243, 0.78); font-size: 0.88rem; line-height: 1.55; text-wrap: pretty; }
+.choose-fallback { margin: 0.9rem 0 1.1rem; color: var(--muted); font-size: 0.8rem; line-height: 1.4; }
+.choose-fallback a { color: var(--amber-light); text-decoration: underline; text-underline-offset: 0.18em; }
+.choose-fallback a:hover { color: var(--chalk); }
+.choose-fallback a:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; border-radius: 0.2rem; }
+@keyframes choose-step-in { from { opacity: 0; transform: translateY(0.4rem); } to { opacity: 1; transform: none; } }
 @keyframes choose-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes choose-rise { from { opacity: 0; transform: translateY(0.75rem); } to { opacity: 1; transform: none; } }
 @keyframes choose-sheet { from { opacity: 0; transform: translateY(1.5rem); } to { opacity: 1; transform: none; } }
@@ -1428,7 +1520,8 @@ section[id], #top { scroll-margin-top: 6.875rem; }
   .choose-body { padding: 1rem 1rem 1.25rem; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .choose.open, .choose-dialog { animation: none; }
+  .choose.open, .choose-dialog, .choose-step--in { animation: none; }
+  .choose-btn, .choose-field input { transition: none; }
   .choose-opt-arrow, .choose-opt:hover .choose-opt-arrow { transition: none; transform: none; }
 }
 
