@@ -1064,6 +1064,7 @@ section[id], #top { scroll-margin-top: 6.875rem; }
 
 /* ---------- Proof / testimonials ---------- */
 .proof { padding: 5rem 0; }
+.proof .section-inner > h2 { margin-bottom: 2.75rem; }
 
 /* Client video testimonials: three vertical (9:16) cards, as the originals were
    shot. Three across and centred; each card is capped at 18rem wide (about 32rem
