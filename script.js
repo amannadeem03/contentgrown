@@ -306,52 +306,120 @@ services.forEach((s, i) => {
   updateTarget();
 })();
 
-/* ---------- Header services dropdown (desktop hover/focus + mobile accordion) ---------- */
-const serviceCategories = [...new Set(services.map(s => s.tag))];
-function buildServiceLinks(container, extraClass) {
-  serviceCategories.forEach(cat => {
-    const col = document.createElement("div");
-    col.className = extraClass;
-    const items = services.filter(s => s.tag === cat)
-      .map(s => `<a href="#services">${s.title}</a>`).join("");
-    col.innerHTML = extraClass === "services-dropdown-col"
-      ? `<span class="services-dropdown-heading">${cat}</span>${items}`
-      : items;
-    container.appendChild(col);
+/* ---------- Header services menu (desktop dropdown + mobile accordion) ---------- */
+// The four options are the What We Do cards, in the same order (the card's line break becomes a space).
+const serviceLabels = services.map(s => s.title.replace(/<br\s*\/?>/g, " "));
+
+// Scroll to What We Do and land on the chosen card. On desktop the section is a tall pinned track in
+// which each card is the active one around scroll progress (i + 0.5) / n, so aim for the middle of
+// that stretch rather than a boundary. On small screens the cards are simply stacked, so scroll to the
+// card itself (the first one to the section top, so the heading shows).
+function scrollToService(index) {
+  const section = document.getElementById("services");
+  let top;
+  if (window.innerWidth > 900) {
+    const distance = section.offsetHeight - window.innerHeight;
+    top = section.offsetTop + ((index + 0.5) / services.length) * distance;
+  } else {
+    const target = index === 0 ? section : servicesList.children[index];
+    top = target.getBoundingClientRect().top + window.scrollY - parseFloat(getComputedStyle(section).scrollMarginTop);
+  }
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  window.scrollTo({ top, behavior: reduceMotion ? "instant" : "smooth" });
+}
+
+const servicesWrap = document.getElementById("services-dropdown-wrap");
+const servicesTrigger = document.getElementById("services-trigger");
+const servicesDropdown = document.getElementById("services-dropdown");
+const mobileServicesToggle = document.getElementById("mobile-services-toggle");
+const mobileServicesList = document.getElementById("mobile-services-list");
+
+// Hover opens the dropdown. Clicking "Services" (or Enter / Space / Arrow Down) pins it open until it is
+// clicked again, an option is chosen, Esc is pressed, or the visitor clicks or tabs away.
+let servicesPinned = false;
+let servicesCloseTimer = null;
+function setServicesOpen(open) {
+  clearTimeout(servicesCloseTimer);
+  servicesWrap.classList.toggle("open", open);
+  servicesTrigger.setAttribute("aria-expanded", String(open));
+  if (!open) servicesPinned = false;
+}
+
+function chooseService(index) {
+  const focusWasInDropdown = servicesWrap.contains(document.activeElement);
+  setServicesOpen(false);
+  if (focusWasInDropdown) servicesTrigger.focus({ preventScroll: true });
+  mobileMenu.classList.remove("open");
+  scrollToService(index);
+}
+
+function buildServiceList(list, isMenu) {
+  serviceLabels.forEach((label, index) => {
+    const item = document.createElement("li");
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = label;
+    if (isMenu) {
+      item.setAttribute("role", "none");
+      button.setAttribute("role", "menuitem");
+    }
+    button.addEventListener("click", () => chooseService(index));
+    item.appendChild(button);
+    list.appendChild(item);
   });
 }
-const servicesDropdown = document.getElementById("services-dropdown");
-buildServiceLinks(servicesDropdown, "services-dropdown-col");
+buildServiceList(servicesDropdown, true);
+buildServiceList(mobileServicesList, false);
 
-const mobileServicesList = document.getElementById("mobile-services-list");
-services.forEach(s => {
-  const a = document.createElement("a");
-  a.href = "#services";
-  a.textContent = s.title;
-  mobileServicesList.appendChild(a);
+servicesWrap.addEventListener("mouseenter", () => setServicesOpen(true));
+servicesWrap.addEventListener("mouseleave", () => {
+  if (servicesPinned) return;
+  clearTimeout(servicesCloseTimer);
+  servicesCloseTimer = setTimeout(() => setServicesOpen(false), 180);
+});
+servicesTrigger.addEventListener("click", () => {
+  if (servicesPinned) {
+    setServicesOpen(false);
+  } else {
+    setServicesOpen(true);
+    servicesPinned = true;
+  }
+});
+servicesWrap.addEventListener("keydown", (e) => {
+  const items = Array.from(servicesDropdown.querySelectorAll("button"));
+  const current = items.indexOf(document.activeElement);
+  const last = items.length - 1;
+  let next;
+  if (e.key === "Escape") {
+    if (!servicesWrap.classList.contains("open")) return;
+    setServicesOpen(false);
+    servicesTrigger.focus();
+    e.preventDefault();
+    return;
+  }
+  if (e.key === "ArrowDown") next = current < last ? current + 1 : 0;
+  else if (e.key === "ArrowUp") next = current > 0 ? current - 1 : last;
+  else if (e.key === "Home") next = 0;
+  else if (e.key === "End") next = last;
+  else return;
+  e.preventDefault();
+  if (!servicesWrap.classList.contains("open")) {
+    setServicesOpen(true);
+    servicesPinned = true;
+  }
+  items[next].focus();
+});
+servicesWrap.addEventListener("focusout", (e) => {
+  if (e.relatedTarget && !servicesWrap.contains(e.relatedTarget)) setServicesOpen(false);
+});
+document.addEventListener("pointerdown", (e) => {
+  if (servicesWrap.classList.contains("open") && !servicesWrap.contains(e.target)) setServicesOpen(false);
 });
 
-const servicesDropdownWrap = document.getElementById("services-dropdown-wrap");
-let dropdownCloseTimer = null;
-function openDropdown() {
-  clearTimeout(dropdownCloseTimer);
-  servicesDropdownWrap.classList.add("open");
-}
-function scheduleCloseDropdown() {
-  clearTimeout(dropdownCloseTimer);
-  dropdownCloseTimer = setTimeout(() => servicesDropdownWrap.classList.remove("open"), 180);
-}
-servicesDropdownWrap.addEventListener("mouseenter", openDropdown);
-servicesDropdownWrap.addEventListener("mouseleave", scheduleCloseDropdown);
-servicesDropdownWrap.addEventListener("focusin", openDropdown);
-servicesDropdownWrap.addEventListener("focusout", (e) => {
-  if (!servicesDropdownWrap.contains(e.relatedTarget)) scheduleCloseDropdown();
-});
-
-const mobileServicesToggle = document.getElementById("mobile-services-toggle");
 mobileServicesToggle.addEventListener("click", () => {
-  mobileServicesToggle.classList.toggle("open");
-  mobileServicesList.classList.toggle("open");
+  const open = mobileServicesToggle.classList.toggle("open");
+  mobileServicesList.classList.toggle("open", open);
+  mobileServicesToggle.setAttribute("aria-expanded", String(open));
 });
 
 /* ---------- How it works ---------- */
@@ -787,7 +855,7 @@ mobileMenu.querySelectorAll("a").forEach(a => a.addEventListener("click", () => 
 /* ---------- Sliding nav hover indicator ---------- */
 const navEl = document.querySelector(".nav");
 const navIndicator = document.getElementById("nav-indicator");
-const navHoverLinks = document.querySelectorAll(".nav-links a");
+const navHoverLinks = document.querySelectorAll(".nav-links a, .nav-links .nav-dropdown-trigger");
 function moveIndicatorTo(link) {
   const navRect = navEl.getBoundingClientRect();
   const linkRect = link.getBoundingClientRect();
@@ -802,7 +870,7 @@ navEl.addEventListener("mouseleave", () => navIndicator.classList.remove("visibl
 
 /* ---------- Nav scroll-spy (active pill state) ---------- */
 const navLinkByTarget = {};
-document.querySelectorAll("#nav-links a[data-target]").forEach(a => {
+document.querySelectorAll("#nav-links [data-target]").forEach(a => {
   navLinkByTarget[a.dataset.target] = a;
 });
 const spySections = Object.keys(navLinkByTarget)

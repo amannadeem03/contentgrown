@@ -183,7 +183,8 @@ section[id], #top { scroll-margin-top: 6.875rem; }
 /* Narrow desktops / landscape tablets (901-1050px): keep the header on one line. */
 @media (min-width: 901px) and (max-width: 1050px) {
   .nav { min-width: 0; padding: 0.5rem 1rem; }
-  .header-row .nav-links a { padding: 0.5625rem 0.625rem; }
+  .header-row .nav-links a,
+  .header-row .nav-links .nav-dropdown-trigger { padding: 0.5625rem 0.625rem; }
   .header-row .nav-cta { min-width: 11rem; padding: 0.9375rem 1.5rem; margin-right: 0.5rem; }
 }
 
@@ -212,7 +213,8 @@ section[id], #top { scroll-margin-top: 6.875rem; }
   letter-spacing: 0.01em;
   color: var(--chalk);
 }
-.nav-links a {
+.nav-links a,
+.nav-links .nav-dropdown-trigger {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
@@ -221,24 +223,34 @@ section[id], #top { scroll-margin-top: 6.875rem; }
   color: rgba(247, 246, 243, 0.72);
   transition: color 0.3s var(--ease-soft), background 0.3s var(--ease-soft);
 }
-.nav-links a.active {
+.nav-links a.active,
+.nav-links .nav-dropdown-trigger.active {
   color: rgba(247, 246, 243, 0.72);
   background: transparent;
+}
+/* "Services" is a button, not a link: strip the button chrome so it matches its link neighbours. */
+.nav-links .nav-dropdown-trigger,
+.services-dropdown button {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  letter-spacing: inherit;
+  cursor: var(--cursor-img), pointer;
 }
 
 .nav-chevron { width: 0.5625rem; height: 0.5625rem; transition: transform 0.3s var(--ease-soft); }
 .nav-item-dropdown { position: relative; padding-bottom: 1rem; margin-bottom: -1rem; }
-.nav-item-dropdown:hover .nav-chevron,
 .nav-item-dropdown.open .nav-chevron { transform: rotate(180deg); }
 
+/* One compact, single-column list of the four services, sized to its content. Shown by the .open
+   class (set on hover, click or key press), never by :hover alone, so clicking an option can close it. */
 .services-dropdown {
   position: absolute;
   top: 100%;
   left: 50%;
   transform: translateX(-50%);
-  width: 35rem;
-  max-width: 80vw;
-  padding: 1.375rem 1.375rem 1.25rem;
+  width: max-content;
+  padding: 0.5rem;
   margin-top: 0.875rem;
   border-radius: 1.25rem;
   background: rgba(16, 15, 13, 0.82);
@@ -246,40 +258,36 @@ section[id], #top { scroll-margin-top: 6.875rem; }
   backdrop-filter: blur(22px) saturate(150%);
   -webkit-backdrop-filter: blur(22px) saturate(150%);
   box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
   transition: opacity 0.28s var(--ease-soft), visibility 0.28s;
 }
-.nav-item-dropdown:hover .services-dropdown,
 .nav-item-dropdown.open .services-dropdown {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
   transform: translate(-50%, 0);
+  /* visible at once when opening (so keyboard focus can move into it); it still fades out on close */
+  transition: opacity 0.28s var(--ease-soft), visibility 0s;
 }
-.services-dropdown-col { display: flex; flex-direction: column; gap: 0.25rem; }
-.services-dropdown-heading {
-  font-family: var(--font-body);
-  font-weight: 500;
-  font-size: 0.68rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--amber);
-  margin-bottom: 0.375rem;
-}
-.services-dropdown a {
-  padding: 0.4375rem 0.5rem;
-  border-radius: 0.625rem;
+.services-dropdown button {
+  display: block;
+  width: 100%;
+  padding: 0.5625rem 0.875rem;
+  border-radius: 0.75rem;
+  text-align: left;
+  white-space: nowrap;
   font-size: 0.86rem;
   color: rgba(247, 246, 243, 0.78);
   transition: background 0.25s var(--ease-soft), color 0.25s var(--ease-soft);
 }
-.services-dropdown a:hover { background: rgba(255, 255, 255, 0.06); color: var(--chalk); }
-.nav-links a:hover {
+.nav-links a:hover,
+.nav-links .nav-dropdown-trigger:hover,
+.services-dropdown button:hover {
   color: var(--amber);
   background: rgba(248, 98, 21, 0.12);
 }
@@ -492,12 +500,23 @@ section[id], #top { scroll-margin-top: 6.875rem; }
   border-bottom: 1px solid var(--line);
 }
 .mobile-services-list.open { display: flex; }
-.mobile-services-list a {
+.mobile-services-list button {
+  display: block;
+  width: 100%;
   padding: 0.5625rem 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: none;
+  text-align: left;
+  font-family: var(--font-body);
+  font-weight: 500;
   font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--muted);
+  cursor: var(--cursor-img), pointer;
 }
-.mobile-services-list a:hover { color: var(--amber); }
+.mobile-services-list button:hover { color: var(--amber); }
 
 /* ---------- Hero ---------- */
 .hero {
