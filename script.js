@@ -820,64 +820,6 @@ const spyObserver = new IntersectionObserver((entries) => {
 }, { rootMargin: "-45% 0px -50% 0px", threshold: 0 });
 spySections.forEach(section => spyObserver.observe(section));
 
-const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-
-/* ---------- Roaming border light on glass CTAs (header CTA uses its own continuous beam instead) ---------- */
-if (finePointer) {
-  document.querySelectorAll(".btn-glass:not(.nav-cta):not(.hero-cta)").forEach((btn) => {
-    let queued = false;
-    let mx = 0, my = 0;
-    btn.addEventListener("mousemove", (e) => {
-      const rect = btn.getBoundingClientRect();
-      mx = ((e.clientX - rect.left) / rect.width) * 100;
-      my = ((e.clientY - rect.top) / rect.height) * 100;
-      if (!queued) {
-        queued = true;
-        requestAnimationFrame(() => {
-          btn.style.setProperty("--mx", mx + "%");
-          btn.style.setProperty("--my", my + "%");
-          queued = false;
-        });
-      }
-    });
-    btn.addEventListener("mouseleave", () => {
-      btn.style.setProperty("--mx", "50%");
-      btn.style.setProperty("--my", "-30%");
-    });
-  });
-}
-
-/* ---------- Magnetic buttons ---------- */
-if (finePointer) {
-  const pullStrength = 0.35;
-  const maxPull = 10; // px
-  document.querySelectorAll(".btn").forEach((btn) => {
-    let queued = false;
-    let tx = 0, ty = 0;
-    btn.addEventListener("mouseenter", () => {
-      btn.style.transition = "transform 0.06s linear";
-    });
-    btn.addEventListener("mousemove", (e) => {
-      const rect = btn.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      tx = Math.max(-maxPull, Math.min(maxPull, (e.clientX - cx) * pullStrength));
-      ty = Math.max(-maxPull, Math.min(maxPull, (e.clientY - cy) * pullStrength));
-      if (!queued) {
-        queued = true;
-        requestAnimationFrame(() => {
-          btn.style.transform = `translate(${tx}px, ${ty}px)`;
-          queued = false;
-        });
-      }
-    });
-    btn.addEventListener("mouseleave", () => {
-      btn.style.transition = "transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)";
-      btn.style.transform = "";
-    });
-  });
-}
-
 /* ---------- Lightbox ---------- */
 const lightbox = document.getElementById("lightbox");
 const lightboxVideo = document.getElementById("lightbox-video");
