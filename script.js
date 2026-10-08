@@ -521,14 +521,6 @@ const pricingIcons = {
   spark: '<path class="pricing-icon-fill" d="M12 4l2.2 5.8L20 12l-5.8 2.2L12 20l-2.2-5.8L4 12l5.8-2.2z"/>',
 };
 
-// Paste the Payoneer payment-link URL for each package here. Leave empty to hide the Pay option.
-// (Each URL must start with https:// - the "Pay online" choice in the Get Started dialog only
-// appears for a package once its link is filled in.)
-const paymentLinks = {
-  standard: { Starter: "", Growth: "", Scale: "" },
-  advanced: { Starter: "", Growth: "", Scale: "" },
-};
-
 // To edit prices, badges or feature lines, change the plain data below (total = videos x perVideo).
 const pricingPlans = {
   standard: {
@@ -598,7 +590,9 @@ renderPricing("standard");
 
 /* ---------- Get Started chooser: a small chat-style dialog ---------- */
 // Clicking "Get Started" on a package opens this instead of scrolling away. It offers WhatsApp,
-// a booking call and (only once a payment link is set in paymentLinks above) online payment.
+// a booking call and a payment-link request. The request is a short in-dialog details step that
+// opens WhatsApp with a ready message; the payment link itself is then sent by hand in that chat.
+// (Nothing the visitor types is stored or sent anywhere except into that WhatsApp message.)
 const WHATSAPP_NUMBER = "923181183581";
 const BOOKING_URL = "https://calendly.com/contentgrownn/15mincall";
 const chooseSvg = {
@@ -607,10 +601,13 @@ const chooseSvg = {
   card: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M2.5 10h19M6.5 15h4"/></svg>',
   arrow: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
   close: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  check: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6.5 12.5l3.7 3.7 7.3-7.9"/></svg>',
 };
 let chooseEl = null;      // the overlay; created on the first click
 let chooseTrigger = null; // the Get Started button that opened it, so focus can go back there
 let choosePressedInside = false;
+let choosePack = null;    // the package the dialog is currently about: { label, plan, videos, total }
+let chooseInputs = null;  // { name, email, phone }: the three fields of the details step
 
 function buildChooser() {
   chooseEl = document.createElement("div");
@@ -623,40 +620,182 @@ function buildChooser() {
         <button class="choose-close" type="button" aria-label="Close">${chooseSvg.close}</button>
       </div>
       <div class="choose-body">
-        <p class="choose-bubble" id="choose-msg"></p>
-        <p class="choose-summary"></p>
-        <div class="choose-options"></div>
+        <div class="choose-step" data-step="options" data-desc="choose-msg">
+          <p class="choose-bubble" id="choose-msg"></p>
+          <p class="choose-summary"></p>
+          <div class="choose-options"></div>
+        </div>
+        <div class="choose-step" data-step="details" data-desc="choose-details-msg" hidden>
+          <p class="choose-bubble" id="choose-details-msg" tabindex="-1">Great! Just a few quick details and we'll send your payment link.</p>
+          <p class="choose-pack"></p>
+          <form class="choose-form" novalidate>
+            <div class="choose-field">
+              <label for="choose-name">Full name</label>
+              <input id="choose-name" name="name" type="text" autocomplete="name" maxlength="60" required>
+              <p class="choose-error" id="choose-name-error" hidden></p>
+            </div>
+            <div class="choose-field">
+              <label for="choose-email">Email address</label>
+              <input id="choose-email" name="email" type="email" inputmode="email" autocomplete="email" autocapitalize="none" spellcheck="false" maxlength="254" required>
+              <p class="choose-error" id="choose-email-error" hidden></p>
+            </div>
+            <div class="choose-field">
+              <label for="choose-phone">WhatsApp number (with country code)</label>
+              <input id="choose-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+1 555 123 4567" maxlength="30" required>
+              <p class="choose-error" id="choose-phone-error" hidden></p>
+            </div>
+            <div class="choose-actions">
+              <button class="choose-btn choose-btn--primary" type="submit">Send request on WhatsApp</button>
+              <button class="choose-btn choose-btn--ghost choose-back" type="button">Back</button>
+            </div>
+            <p class="choose-privacy">Your details are only sent to us on WhatsApp.</p>
+          </form>
+        </div>
+        <div class="choose-step choose-done" data-step="done" data-desc="choose-done-msg" hidden>
+          <span class="choose-check">${chooseSvg.check}</span>
+          <h3 class="choose-done-title" tabindex="-1">Your request is ready to send</h3>
+          <p class="choose-done-text" id="choose-done-msg">WhatsApp should have opened with your details. Just press Send there and we'll reply with your secure payment link. Once payment is completed, we'll get your project started.</p>
+          <p class="choose-fallback">WhatsApp didn't open? <a href="${chooseWhatsAppUrl("")}" target="_blank" rel="noopener">Tap here</a></p>
+          <button class="choose-btn choose-btn--secondary choose-done-close" type="button">Close</button>
+        </div>
       </div>
     </div>`;
+  chooseInputs = {
+    name: chooseEl.querySelector("#choose-name"),
+    email: chooseEl.querySelector("#choose-email"),
+    phone: chooseEl.querySelector("#choose-phone"),
+  };
+  Object.values(chooseInputs).forEach(input => input.addEventListener("input", () => {
+    // Once a field has been flagged, re-check it as the visitor fixes it so the message clears itself.
+    if (input.hasAttribute("aria-invalid")) setChooseError(input, chooseValidators[input.name](cleanChooseValue(input.value)));
+  }));
+  chooseEl.querySelector(".choose-form").addEventListener("submit", submitChooseRequest);
   // Close on the X or on a click that starts and ends on the dark overlay (so dragging a text
   // selection out of the dialog does not close it).
   chooseEl.addEventListener("pointerdown", (e) => { choosePressedInside = e.target !== chooseEl; });
   chooseEl.addEventListener("click", (e) => {
     const outside = e.target === chooseEl && !choosePressedInside;
     choosePressedInside = false;
-    if (outside || e.target.closest(".choose-close") || e.target.closest(".choose-opt")) closeChooser();
+    if (outside || e.target.closest(".choose-close, .choose-done-close") || e.target.closest("a.choose-opt")) closeChooser();
+    else if (e.target.closest(".choose-opt--pay")) showChooseStep("details", chooseEl.querySelector("#choose-details-msg"));
+    else if (e.target.closest(".choose-back")) showChooseStep("options", chooseEl.querySelector(".choose-opt--pay"));
   });
   document.body.appendChild(chooseEl);
 }
 
+function chooseWhatsAppUrl(text) {
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
+}
+
+// A link option opens in a new tab; with no href it is a button that stays inside the dialog.
 function chooseOption(cls, href, icon, title, sub) {
-  const a = document.createElement("a");
-  a.className = `choose-opt ${cls}`;
-  a.href = href;
-  a.target = "_blank";
-  a.rel = "noopener";
-  a.innerHTML = `<span class="choose-opt-icon">${icon}</span><span class="choose-opt-text"><strong></strong><span></span></span><span class="choose-opt-arrow">${chooseSvg.arrow}</span>`;
-  a.querySelector("strong").textContent = title;
-  a.querySelector(".choose-opt-text > span").textContent = sub;
-  return a;
+  const el = document.createElement(href ? "a" : "button");
+  el.className = `choose-opt ${cls}`;
+  if (href) {
+    el.href = href;
+    el.target = "_blank";
+    el.rel = "noopener";
+  } else {
+    el.type = "button";
+  }
+  el.innerHTML = `<span class="choose-opt-icon">${icon}</span><span class="choose-opt-text"><strong></strong><span></span></span><span class="choose-opt-arrow">${chooseSvg.arrow}</span>`;
+  el.querySelector("strong").textContent = title;
+  el.querySelector(".choose-opt-text > span").textContent = sub;
+  return el;
+}
+
+// One tidy line: control characters and line breaks become spaces, runs of spaces collapse, ends are trimmed.
+function cleanChooseValue(value) {
+  return String(value).replace(/[\u0000-\u001f\u007f-\u009f]+/g, " ").replace(/\s+/g, " ").trim();
+}
+
+// Each validator takes the cleaned value and returns a friendly message, or "" when the value is fine.
+const chooseValidators = {
+  name(value) {
+    if (!value) return "Please enter your full name.";
+    if (value.length < 2) return "Your name needs at least 2 characters.";
+    if (value.length > 60) return "Please keep your name to 60 characters or fewer.";
+    return "";
+  },
+  email(value) {
+    if (!value) return "Please enter your email address.";
+    if (value.length > 254 || !/^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)*\.[^\s@.]{2,}$/.test(value)) {
+      return "That email doesn't look right. Try something like name@example.com.";
+    }
+    return "";
+  },
+  phone(value) {
+    if (!value) return "Please enter your WhatsApp number with country code.";
+    // Spaces, dashes and brackets are ignored, as is one leading + (or 00); what is left must be 8-15 digits.
+    let digits = value.replace(/[\s\-()[\]]/g, "");
+    if (digits.startsWith("+")) digits = digits.slice(1);
+    else if (digits.startsWith("00")) digits = digits.slice(2);
+    if (!/^\d+$/.test(digits)) return "Please use digits only, with your country code, e.g. +1 555 123 4567.";
+    if (digits.length < 8 || digits.length > 15) return "Please enter 8 to 15 digits, including your country code.";
+    return "";
+  },
+};
+
+function setChooseError(input, message) {
+  const error = chooseEl.querySelector(`#${input.id}-error`);
+  error.textContent = message;
+  error.hidden = !message;
+  if (message) {
+    input.setAttribute("aria-invalid", "true");
+    input.setAttribute("aria-describedby", error.id);
+  } else {
+    input.removeAttribute("aria-invalid");
+    input.removeAttribute("aria-describedby");
+  }
+}
+
+// Validates the details form; on success opens WhatsApp with the ready message and shows the confirmation.
+// window.open runs right here in the submit handler (the visitor's own click / Enter press) so popup blockers allow it.
+function submitChooseRequest(e) {
+  e.preventDefault();
+  const values = {};
+  let firstInvalid = null;
+  for (const [key, input] of Object.entries(chooseInputs)) {
+    values[key] = cleanChooseValue(input.value);
+    input.value = values[key];
+    const message = chooseValidators[key](values[key]);
+    setChooseError(input, message);
+    if (message && !firstInvalid) firstInvalid = input;
+  }
+  if (firstInvalid) { firstInvalid.focus(); return; }
+
+  const url = chooseWhatsAppUrl([
+    `Hi, I'd like to purchase the ${choosePack.plan} package.`,
+    `Name: ${values.name}`,
+    `Email: ${values.email}`,
+    `WhatsApp: ${values.phone}`,
+    `Package: ${choosePack.label} - ${choosePack.plan} - ${choosePack.videos} videos - $${choosePack.total}`,
+    "Please send me the payment link.",
+  ].join("\n"));
+  window.open(url, "_blank", "noopener");
+  chooseEl.querySelector(".choose-fallback a").href = url;
+  showChooseStep("done", chooseEl.querySelector(".choose-done-title"));
+}
+
+// Swaps the dialog content between "options", "details" and "done" (same dialog, no page jump) and moves focus.
+function showChooseStep(name, focusEl, animate = true) {
+  const dialog = chooseEl.firstElementChild;
+  chooseEl.querySelectorAll(".choose-step").forEach(step => {
+    const active = step.dataset.step === name;
+    step.hidden = !active;
+    step.classList.toggle("choose-step--in", active && animate);
+    if (active) dialog.setAttribute("aria-describedby", step.dataset.desc);
+  });
+  dialog.scrollTop = 0;
+  if (focusEl) focusEl.focus({ preventScroll: true });
 }
 
 function chooserKeydown(e) {
   if (e.key === "Escape") { e.preventDefault(); closeChooser(); return; }
   if (e.key !== "Tab") return;
-  // Keep Tab / Shift+Tab inside the dialog.
+  // Keep Tab / Shift+Tab inside the dialog (only controls in the step that is showing count).
   const dialog = chooseEl.firstElementChild;
-  const items = Array.from(dialog.querySelectorAll("a[href], button:not([disabled])"));
+  const items = Array.from(dialog.querySelectorAll("a[href], button:not([disabled]), input:not([disabled])")).filter(el => !el.closest("[hidden]"));
   const first = items[0], last = items[items.length - 1], active = document.activeElement;
   if (!dialog.contains(active) || active === dialog) {
     e.preventDefault();
@@ -676,21 +815,22 @@ function openChooser(tier, planName, trigger) {
   if (!plan) return;
   if (!chooseEl) buildChooser();
   const total = plan.total.toLocaleString("en-US");
-  chooseEl.querySelector(".choose-bubble").innerHTML = `Hi! Great choice. How would you like to get started with <strong>${set.label} - ${plan.name}</strong>?`;
+  chooseEl.querySelector("#choose-msg").innerHTML = `Hi! Great choice. How would you like to get started with <strong>${set.label} - ${plan.name}</strong>?`;
   chooseEl.querySelector(".choose-summary").textContent = `${plan.videos} videos · $${plan.perVideo}/video · $${total} total`;
 
   const waText = `Hi CONTENTGROWN! I'm interested in the ${plan.name} package (${set.label}, ${plan.videos} videos, $${total}). I'd like to get started.`;
-  const options = chooseEl.querySelector(".choose-options");
-  options.replaceChildren(
-    chooseOption("choose-opt--wa", `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(waText)}`, chooseSvg.whatsapp, "Chat on WhatsApp", "Ask a question or start the conversation"),
+  chooseEl.querySelector(".choose-options").replaceChildren(
+    chooseOption("choose-opt--wa", chooseWhatsAppUrl(waText), chooseSvg.whatsapp, "Chat on WhatsApp", "Ask a question or start the conversation"),
     chooseOption("choose-opt--call", BOOKING_URL, chooseSvg.calendar, "Book a call", "Prefer to talk it through? Pick a time"),
+    chooseOption("choose-opt--pay", "", chooseSvg.card, "Request payment link", "We'll send you a secure payment link"),
   );
-  // "Pay online" only exists once a https:// link has been pasted into paymentLinks for this package.
-  const rawPay = (paymentLinks[tier] || {})[plan.name];
-  const payUrl = typeof rawPay === "string" ? rawPay.trim() : "";
-  if (payUrl.startsWith("https://")) {
-    options.appendChild(chooseOption("choose-opt--pay", payUrl, chooseSvg.card, "Pay online", "Secure payment via Payoneer"));
-  }
+
+  // Every opening starts fresh on the options step with an empty details form.
+  choosePack = { label: set.label, plan: plan.name, videos: plan.videos, total };
+  chooseEl.querySelector(".choose-pack").innerHTML = `<strong>${set.label} - ${plan.name}</strong> · ${plan.videos} videos · $${total}`;
+  chooseEl.querySelector(".choose-form").reset();
+  Object.values(chooseInputs).forEach(input => setChooseError(input, ""));
+  showChooseStep("options", null, false);
 
   chooseTrigger = trigger || null;
   // Lock page scroll (body.scroll-locked); keep the page from jumping sideways when the scrollbar goes.
