@@ -1339,21 +1339,103 @@ section[id], #top { scroll-margin-top: 6.875rem; }
 .cta-footnote { margin-top: 1.875rem !important; font-size: 0.85rem !important; color: var(--muted-2); }
 
 /* ---------- Footer ---------- */
-.site-footer { border-top: 1px solid var(--line); padding: 3.75rem 0; }
+.site-footer { border-top: 1px solid var(--line); padding: 4rem 0 2.25rem; }
 .footer-inner {
-  display: grid;
-  grid-template-columns: 1.2fr 1fr 1fr;
-  gap: 1.5rem;
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2rem;
 }
-.footer-brand p { color: var(--muted); margin-top: 0.6875rem; font-size: 0.9rem; }
-.footer-links { display: flex; flex-direction: column; gap: 0.6875rem; }
-.footer-links a { color: var(--muted); font-size: 0.9rem; transition: color 0.3s var(--ease-soft); }
-.footer-links a:hover { color: var(--amber); }
-.footer-meta { color: var(--muted-2); font-size: 0.85rem; text-align: right; }
-.footer-meta p { margin-bottom: 0.5625rem; }
-.footer-meta a { color: var(--muted); transition: color 0.3s var(--ease-soft); }
-.footer-meta a:hover { color: var(--amber); }
+/* Brand block: flush with the container's left edge (the shared .logo has a
+   0.5rem header inset that made the footer logo sit off-line). */
+.footer-brand { display: flex; flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+.footer-brand .logo { margin-left: 0; }
+.footer-brand p { color: var(--muted); font-size: 0.9rem; line-height: 1.4; }
+
+/* "Let's talk." card: heading left, logo buttons right (stacked on tablet/phone) */
+.footer-card {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  padding: 2.25rem 2.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 1.25rem;
+  background: linear-gradient(112deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 45%, rgba(11, 9, 8, 0.88) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), inset 0 -1px 0 rgba(0, 0, 0, 0.3), 0 26px 52px -28px rgba(0, 0, 0, 0.6);
+}
+.footer-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(92% 128% at 86% -12%, rgba(248, 98, 21, 0.34), transparent 53%);
+  pointer-events: none;
+}
+.footer-card > * { position: relative; z-index: 1; }
+
+.footer-card-head { display: flex; align-items: center; gap: 1rem; min-width: 0; }
+.footer-card-icon {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 2.875rem;
+  height: 2.875rem;
+  border-radius: 0.875rem;
+  color: var(--amber);
+  background: rgba(248, 98, 21, 0.14);
+  border: 1px solid rgba(248, 98, 21, 0.34);
+}
+.footer-title { font-size: clamp(1.6rem, 2.6vw, 2.15rem); margin: 0; letter-spacing: -0.035em; }
+.footer-sub { color: var(--muted); font-size: 0.95rem; line-height: 1.4; margin-top: 0.3125rem; }
+
+/* Logo-only contact buttons */
+.social-cluster { display: flex; flex-shrink: 0; gap: 0.875rem; }
+.social-btn {
+  --b: 255, 255, 255;
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 3.75rem;
+  height: 3.75rem;
+  border-radius: 1.125rem;
+  border: 1px solid rgba(var(--b), 0.34);
+  background: rgba(var(--b), 0.13);
+  transition: transform 0.35s var(--ease), border-color 0.3s var(--ease-soft);
+}
+/* brighter tint + soft brand glow: both fade in with opacity only */
+.social-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(var(--b), 0.16);
+  box-shadow: 0 14px 28px -12px rgba(var(--b), 0.55);
+  opacity: 0;
+  transition: opacity 0.3s var(--ease-soft);
+  pointer-events: none;
+}
+.social-btn:hover, .social-btn:focus-visible { transform: translateY(-3px); border-color: rgba(var(--b), 0.8); }
+.social-btn:hover::before, .social-btn:focus-visible::before { opacity: 1; }
+.social-btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
+.social-icon { position: relative; width: 1.75rem; height: 1.75rem; color: rgb(var(--ic, var(--b))); }
+.social-btn--instagram { --b: 228, 64, 95; }
+.social-btn--facebook  { --b: 24, 119, 242; }
+.social-btn--linkedin  { --b: 10, 102, 194; --ic: 59, 142, 219; } /* glyph lifted a touch: #0A66C2 alone is too dim on the dark card */
+.social-btn--whatsapp  { --b: 37, 211, 102; }
+.social-btn--gmail     { --b: 234, 67, 53; }
+
+.footer-legal {
+  width: 100%;
+  margin-top: 0.25rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line);
+  color: var(--muted-2);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
 
 /* ---------- Lightbox ---------- */
 .lightbox {
@@ -1423,8 +1505,7 @@ section[id], #top { scroll-margin-top: 6.875rem; }
   .proof-video-grid { grid-template-columns: repeat(2, 1fr); }
   .quote-fan { --qf-w: min(38rem, 76vw); }
   .quote-fan-text { font-size: 1.06rem; }
-  .footer-inner { grid-template-columns: 1fr; text-align: left; }
-  .footer-meta { text-align: left; }
+  .footer-card { flex-direction: column; align-items: flex-start; gap: 1.5rem; padding: 1.75rem 1.5rem; }
 }
 @media (max-width: 560px) {
   .stat-item { min-width: 8.25rem; padding: 1rem 0.75rem; }
@@ -1440,6 +1521,10 @@ section[id], #top { scroll-margin-top: 6.875rem; }
   .quote-fan-card[data-pos="2"]  { --x: 0.34;  --y: 1.9; --r: 8; }
   .quote-fan-ticks { display: none; }
   .quote-fan-meter { min-width: 5rem; }
+  .site-footer { padding: 3rem 0 2rem; }
+  .footer-card { gap: 1.25rem; padding: 1.5rem 0.875rem; }
+  .social-cluster { display: grid; grid-template-columns: repeat(5, 1fr); width: 100%; gap: 0.375rem; }
+  .social-btn { width: 100%; height: auto; aspect-ratio: 1; min-height: 3.25rem; border-radius: 1rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1447,4 +1532,6 @@ section[id], #top { scroll-margin-top: 6.875rem; }
   .reveal { transition: opacity 0.4s ease; transform: none; }
   .scroll-indicator span { animation: none; }
   .quote-fan-card, .quote-fan-card::after, .quote-fan-card::before { transition: opacity 0.3s ease; }
+  .social-btn { transition: border-color 0.3s ease; }
+  .social-btn:hover, .social-btn:focus-visible { transform: none; }
 }
