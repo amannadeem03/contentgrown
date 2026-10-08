@@ -442,31 +442,60 @@ window.addEventListener("resize", () => {
 requestHowScrollUpdate();
 
 /* ---------- Pricing packages ---------- */
+// Feature icons: 24x24 line icons drawn with currentColor; "spark" is a small filled four-point star.
+const pricingIcons = {
+  timer: '<circle cx="12" cy="13.5" r="7.5"/><path d="M12 9.5v4l2.5 1.5M9.5 3h5"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  captions: '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10.5 10.2a2.4 2.4 0 1 0 0 3.6M17 10.2a2.4 2.4 0 1 0 0 3.6"/>',
+  broll: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M10 9l5 3-5 3z"/>',
+  music: '<path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>',
+  pencil: '<path d="M4 20l1-4L16.5 4.5a2.1 2.1 0 0 1 3 3L8 19z"/><path d="M14.5 6.5l3 3"/>',
+  spark: '<path class="pricing-icon-fill" d="M12 4l2.2 5.8L20 12l-5.8 2.2L12 20l-2.2-5.8L4 12l5.8-2.2z"/>',
+};
+
+// To edit prices, badges or feature lines, change the plain data below (total = videos x perVideo).
 const pricingPlans = {
   standard: {
     label: "Standard Editing",
     intro: "For polished, retention-focused short-form content.",
+    features: [
+      { icon: "timer", text: "Up to 90 seconds per video" },
+      { icon: "captions", text: "Professional captions (dynamic & styled)" },
+      { icon: "broll", text: "B-roll footage (stock or provided)" },
+      { icon: "music", text: "Music & basic sound design" },
+      { icon: "pencil", text: "2 rounds of revisions per video" },
+      { icon: "clock", text: "48–72 hour turnaround per video" },
+    ],
     plans: [
-      { name: "Starter", videos: 5, perVideo: 70, total: 350, best: "Ideal for getting a reliable content rhythm in place.", features: ["Up to 90 seconds per video", "Professional captions, B-roll, music & sound design", "2 rounds of revisions per video", "48–72 hour turnaround per video"] },
-      { name: "Growth", videos: 10, perVideo: 60, total: 600, badge: "Most Popular", best: "Best for creators and brands publishing every week.", features: ["Up to 90 seconds per video", "Professional captions, B-roll, music & sound design", "2 rounds of revisions per video", "48–72 hour turnaround per video"] },
-      { name: "Scale", videos: 20, perVideo: 50, total: 1000, badge: "Best Value", best: "Built for consistent, high-volume content engines.", features: ["Up to 90 seconds per video", "Professional captions, B-roll, music & sound design", "2 rounds of revisions per video", "48–72 hour turnaround per video"] },
+      { name: "Starter", videos: 5, perVideo: 60, total: 300, best: "Ideal for getting a reliable content rhythm in place." },
+      { name: "Growth", videos: 10, perVideo: 50, total: 500, badge: "17% OFF", best: "Best for creators and brands publishing every week." },
+      { name: "Scale", videos: 20, perVideo: 40, total: 800, badge: "33% OFF", best: "Built for consistent, high-volume content engines." },
     ],
   },
   advanced: {
     label: "Advanced Editing",
     intro: "For content requiring deeper production and visual work.",
+    features: [
+      { icon: "spark", text: "Up to 90 seconds per video" },
+      { icon: "spark", text: "Detailed motion graphics & custom visual elements" },
+      { icon: "spark", text: "Advanced animation, masking & compositing" },
+      { icon: "spark", text: "Unlimited revisions until approved" },
+    ],
     plans: [
-      { name: "Starter", videos: 5, perVideo: 100, total: 500, best: "Ideal for elevated content with a stronger visual story.", features: ["Up to 90 seconds per video", "Detailed motion graphics & custom visual elements", "Advanced animation, masking & compositing", "Detailed sound design and retention editing", "2 rounds of revisions per video"] },
-      { name: "Growth", videos: 10, perVideo: 90, total: 900, badge: "Most Popular", best: "Best for brands producing premium content every week.", features: ["Up to 90 seconds per video", "Detailed motion graphics & custom visual elements", "Advanced animation, masking & compositing", "Detailed sound design and retention editing", "2 rounds of revisions per video"] },
-      { name: "Scale", videos: 20, perVideo: 80, total: 1600, badge: "Best Value", best: "Made for serious output with premium production value.", features: ["Up to 90 seconds per video", "Detailed motion graphics & custom visual elements", "Advanced animation, masking & compositing", "Detailed sound design and retention editing", "2 rounds of revisions per video"] },
+      { name: "Starter", videos: 5, perVideo: 85, total: 425, best: "Ideal for elevated content with a stronger visual story." },
+      { name: "Growth", videos: 10, perVideo: 75, total: 750, badge: "12% OFF", best: "Best for brands producing premium content every week." },
+      { name: "Scale", videos: 20, perVideo: 65, total: 1300, badge: "24% OFF", best: "Made for serious output with premium production value." },
     ],
   },
 };
 
 const pricingGrid = document.getElementById("pricing-grid");
 const pricingToggleOptions = Array.from(document.querySelectorAll(".pricing-toggle-option"));
+function pricingFeatureHtml({ icon, text }) {
+  return `<li><svg class="pricing-icon" viewBox="0 0 24 24" aria-hidden="true">${pricingIcons[icon]}</svg><span>${text}</span></li>`;
+}
 function renderPricing(tier) {
-  const { label, intro, plans } = pricingPlans[tier];
+  const { label, plans, features } = pricingPlans[tier];
   pricingGrid.innerHTML = plans.map(plan => `
     <article class="pricing-card ${plan.badge ? "pricing-card--featured" : ""}">
       <div class="pricing-card-topline">
@@ -476,13 +505,12 @@ function renderPricing(tier) {
       <h3>${plan.name}</h3>
       <p class="pricing-videos">${plan.videos} video package</p>
       <div class="pricing-price"><strong>$${plan.perVideo}</strong><span>/ video</span></div>
-      <div class="pricing-total"><span>Total package</span><strong>$${plan.total.toLocaleString()}</strong></div>
+      <div class="pricing-total"><span>Total package</span><strong>$${plan.total.toLocaleString("en-US")}</strong></div>
       <p class="pricing-best">${plan.best}</p>
-      <p class="pricing-includes-title">Includes</p>
-      <ul class="pricing-features">${plan.features.map(feature => `<li>${feature}</li>`).join("")}</ul>
+      <p class="pricing-includes-title">Includes <span class="pricing-includes-tier">(${label})</span></p>
+      <ul class="pricing-features">${features.map(pricingFeatureHtml).join("")}</ul>
       <div class="pricing-actions">
         <a class="btn ${plan.badge ? "btn-solid btn-glass" : "btn-glass"}" href="#book">Get Started</a>
-        <a class="pricing-call-link" href="#book">Book a Call <span aria-hidden="true">→</span></a>
       </div>
     </article>`).join("");
   pricingGrid.dataset.tier = tier;
