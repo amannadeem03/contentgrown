@@ -746,29 +746,35 @@ videoTestimonials.forEach(t => {
 })();
 
 /* ---------- FAQ ---------- */
+// Answers are our own trusted copy. A plain string is wrapped in a <p>;
+// a string that starts with a tag (e.g. "<p>..</p><ul>..</ul>") is inserted as-is.
 const faqs = [
-  { q: "How is your pricing structured?", a: "We work on monthly retainers and packages, priced around your format mix and volume rather than a flat per-video rate. Most clients find a retainer costs less than a full-time editor and delivers more consistently. We'll walk you through the exact numbers on the call." },
-  { q: "What's your turnaround time?", a: "Short-form: 24–48 hours. Long-form: 48–72 hours, up to 3–4 days for complex edits. Ads and VSLs: 3–4 days depending on complexity. Motion graphics: 48–72 hours. Turnaround times are agreed upfront and hold at volume." },
-  { q: "Can you handle bulk content?", a: "Yes. Our current capacity is up to 300 short-form videos, 50–70 long-form videos, and 40–50 ads/VSLs per month. Volume doesn't change the turnaround or the quality." },
-  { q: "Do you write scripts?", a: "Scripting is available as an add-on. Most clients bring their own scripts or outlines, but if you want that handled too, we can include it in your package." },
-  { q: "How many revisions do I get?", a: "Three rounds of revisions are included on every deliverable. In practice most projects need one, because we lock your style during onboarding rather than discovering it through revisions." },
-  { q: "What are your contract terms?", a: "Contract terms — pending. Ask on your call." },
-  { q: "What do you need from me to get started?", a: "Your raw footage, any brand assets you have (fonts, colors, logos, existing content you like), and a rough sense of your publishing schedule. We handle the rest." },
-  { q: "What if I don't like the style?", a: "That's what the calibration step is for. We lock your style before volume starts, so you're approving a direction once instead of correcting the same thing on every video." },
+  { q: "Do you handle the creative direction?", a: "Your references and brief set the direction, and we focus on executing it to a high standard. If you want consistency across videos, share your fonts and brand colours and we will apply them to every edit." },
+  { q: "How many rounds of revisions do I get?", a: "Standard Editing includes two rounds of revisions per video, and Advanced Editing includes unlimited revisions until you approve the video. On Standard Editing, extra rounds beyond the two included may be charged, unless the change is needed because of a mistake on our side." },
+  { q: "What counts as a revision?", a: "<p>Please label each piece of feedback as one of the following so we can turn it around quickly:</p><ul><li><strong>Correction:</strong> fixing errors such as typos, timing issues or small tweaks. Always free.</li><li><strong>Change:</strong> adjustments within the approved brief. Free within your included revision rounds.</li><li><strong>New scope:</strong> new ideas, or changes to motion design, scripts, structure, aspect ratios or the overall creative direction. Billed separately.</li></ul>" },
+  { q: "Is there a deadline for sending revision feedback?", a: "Yes. You have 14 days after delivery to send your feedback. This lets us close each edit properly, keeps your projects moving, and helps you keep posting consistently without delays or a backlog." },
+  { q: "What happens if my feedback is unclear or outside the brief?", a: "We may pause the edit and ask you to clarify before continuing. It keeps the result accurate and saves you from unnecessary extra rounds." },
+  { q: "Is my footage safe with CONTENTGROWN?", a: "Yes. Your files are stored securely and only the team members working on your project can access them. We never share your footage or personal information with third parties without your consent." },
+  { q: "What if I'm not happy with the final video?", a: "Tell us what is off. Your package includes revision rounds for exactly this, and our editors will work through your feedback to get the video where you need it." },
+  { q: "Can I pick how long my video is?", a: "Yes. You can choose 30 seconds, 60 seconds, or up to 90 seconds for each video." },
 ];
 const faqList = document.getElementById("faq-list");
 faqs.forEach(f => {
   const item = document.createElement("div");
   item.className = "faq-item reveal";
+  const answerHtml = /^\s*</.test(f.a) ? f.a : `<p>${f.a}</p>`;
   item.innerHTML = `
     <button class="faq-question">
       <span>${f.q}</span>
       <span class="faq-icon"></span>
     </button>
-    <div class="faq-answer"><p>${f.a}</p></div>
+    <div class="faq-answer">${answerHtml}</div>
   `;
   const btn = item.querySelector(".faq-question");
   const answer = item.querySelector(".faq-answer");
+  // Height to animate to: the answer's full content height (scrollHeight, so
+  // lists and wrapped lines are never clipped) plus a little for the padding.
+  const fitHeight = () => answer.scrollHeight + 24 + "px";
   btn.addEventListener("click", () => {
     const isOpen = item.classList.contains("open");
     faqList.querySelectorAll(".faq-item.open").forEach(open => {
@@ -777,8 +783,12 @@ faqs.forEach(f => {
     });
     if (!isOpen) {
       item.classList.add("open");
-      answer.style.maxHeight = answer.scrollHeight + 24 + "px";
+      answer.style.maxHeight = fitHeight();
     }
+  });
+  // If the window is resized while an answer is open the text re-wraps: re-measure.
+  window.addEventListener("resize", () => {
+    if (item.classList.contains("open")) answer.style.maxHeight = fitHeight();
   });
   faqList.appendChild(item);
 });
