@@ -4,11 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CONTENTGROWN — Content That Actually Converts</title>
+<!-- Hero clips 3 and 4 are hidden on phones (max-width 700px), so they carry data-src and get their file the moment the
+     parser creates them on wider screens. Runs before the stylesheets so it never waits for them; script.js repeats the
+     same step as a safety net. -->
+<script>(function(){if(!window.MutationObserver||window.matchMedia("(max-width: 700px)").matches)return;var m=new MutationObserver(function(){var v=document.querySelectorAll(".hero-loop[data-src]");for(var i=0;i<v.length;i++)if(!v[i].getAttribute("src"))v[i].src=v[i].getAttribute("data-src");});m.observe(document,{childList:true,subtree:true});document.addEventListener("DOMContentLoaded",function(){m.disconnect();});})();</script>
 <link rel="icon" href="assets/favicon.ico" sizes="32x32">
 <link rel="icon" type="image/png" href="assets/favicon-16x16.png" sizes="16x16">
 <link rel="icon" type="image/png" href="assets/favicon-32x32.png" sizes="32x32">
 <link rel="icon" type="image/png" href="assets/favicon-192.png" sizes="192x192">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<!-- Stills for the four hero clips: painted straight away while the clips themselves start up. -->
+<link rel="preload" as="image" href="assets/hero-videos/video-01.jpg" fetchpriority="high">
+<link rel="preload" as="image" href="assets/hero-videos/video-1.jpg" fetchpriority="high">
+<link rel="preload" as="image" href="assets/hero-videos/video-3.jpg" fetchpriority="high">
+<link rel="preload" as="image" href="assets/hero-videos/video-27.jpg" fetchpriority="high">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -17,8 +26,9 @@
 <body>
 
 <div class="bg-fixed" aria-hidden="true">
-  <video class="bg-fixed-video" id="bg-fixed-video-a" src="assets/site-bg.mp4" muted autoplay loop playsinline preload="auto"></video>
-  <video class="bg-fixed-video" id="bg-fixed-video-b" src="assets/site-bg.mp4" muted autoplay loop playsinline preload="auto"></video>
+  <!-- The ~20 MB site background is only fetched once the four hero clips are playing (see script.js), so it never competes with them. -->
+  <video class="bg-fixed-video" id="bg-fixed-video-a" data-src="assets/site-bg.mp4" style="opacity:0" muted loop playsinline preload="none"></video>
+  <video class="bg-fixed-video" id="bg-fixed-video-b" data-src="assets/site-bg.mp4" style="opacity:0" muted loop playsinline preload="none"></video>
   <div class="aurora"></div>
   <div class="blob blob-1"></div>
   <div class="blob blob-2"></div>
@@ -67,10 +77,10 @@
 
   <section class="hero" id="hero">
     <div class="hero-bg" id="hero-bg" aria-hidden="true">
-      <div class="hero-bg-col"><video class="hero-loop" muted autoplay playsinline preload="auto" src="assets/hero-videos/video-01.mp4"></video></div>
-      <div class="hero-bg-col"><video class="hero-loop" muted autoplay playsinline preload="auto" src="assets/hero-videos/video-1.mp4"></video></div>
-      <div class="hero-bg-col"><video class="hero-loop" muted autoplay playsinline preload="auto" src="assets/hero-videos/video-3.mp4"></video></div>
-      <div class="hero-bg-col"><video class="hero-loop" muted autoplay playsinline preload="auto" src="assets/hero-videos/video-27.mp4"></video></div>
+      <div class="hero-bg-col"><video class="hero-loop" muted autoplay loop playsinline preload="auto" poster="assets/hero-videos/video-01.jpg" src="assets/hero-videos/video-01.mp4"></video></div>
+      <div class="hero-bg-col"><video class="hero-loop" muted autoplay loop playsinline preload="auto" poster="assets/hero-videos/video-1.jpg" src="assets/hero-videos/video-1.mp4"></video></div>
+      <div class="hero-bg-col"><video class="hero-loop" muted autoplay loop playsinline preload="auto" poster="assets/hero-videos/video-3.jpg" data-src="assets/hero-videos/video-3.mp4"></video></div>
+      <div class="hero-bg-col"><video class="hero-loop" muted autoplay loop playsinline preload="auto" poster="assets/hero-videos/video-27.jpg" data-src="assets/hero-videos/video-27.mp4"></video></div>
     </div>
     <div class="hero-content">
       <div class="eyebrow-rule"></div>

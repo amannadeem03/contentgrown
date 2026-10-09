@@ -1,19 +1,69 @@
-/* ---------- Smooth hero background video loop ---------- */
+/* ---------- Hero background videos: start at once, keep playing, rest only while off screen ---------- */
+const heroVideos = Array.from(document.querySelectorAll(".hero-loop"));
+
+// Columns 3 and 4 are hidden on phones, so index.html only attaches their clips (data-src) on wider
+// screens. This also covers a phone being turned sideways later.
+const heroNarrowQuery = window.matchMedia("(max-width: 700px)");
+function attachHeroSources() {
+  if (heroNarrowQuery.matches) return;
+  heroVideos.forEach((v) => {
+    if (!v.getAttribute("src") && v.dataset.src) v.src = v.dataset.src;
+  });
+}
+attachHeroSources();
+if (heroNarrowQuery.addEventListener) heroNarrowQuery.addEventListener("change", attachHeroSources);
+
+// Starts a clip unless it is off screen, paused for the VSL, or already running.
+function kickHeroVideo(v) {
+  if (v.dataset.offscreen === "1" || document.body.classList.contains("vsl-playing")) return;
+  if (!v.getAttribute("src") || !(v.paused || v.ended)) return;
+  v.play().catch(() => {});
+}
+// The observer only ever PAUSES clips that scrolled out of view (and restarts them on return); the hero
+// is on screen at load, so the clips are never held back waiting for it.
 const heroVideoObserver = new IntersectionObserver((entries) => {
   entries.forEach((entry) => {
     const v = entry.target;
-    if (entry.isIntersecting && !document.body.classList.contains("vsl-playing")) v.play().catch(() => {});
-    else v.pause();
+    if (entry.isIntersecting && !document.body.classList.contains("vsl-playing")) {
+      delete v.dataset.offscreen;
+      kickHeroVideo(v);
+    } else {
+      if (!entry.isIntersecting) v.dataset.offscreen = "1";
+      v.pause();
+    }
   });
 }, { threshold: 0 });
-document.querySelectorAll(".hero-loop").forEach((v) => {
+heroVideos.forEach((v) => {
   v.addEventListener("ended", () => {
     v.currentTime = 0;
     v.play().catch(() => {});
   });
+  // Try again the moment there is something to play, in case the first play() came too early.
+  v.addEventListener("loadeddata", () => kickHeroVideo(v));
+  v.addEventListener("canplay", () => kickHeroVideo(v));
   // Only decode the hero clips while the hero is on screen - four videos
   // playing out of sight were competing with the background for decoders.
   heroVideoObserver.observe(v);
+  kickHeroVideo(v);
+});
+document.addEventListener("DOMContentLoaded", () => heroVideos.forEach(kickHeroVideo));
+window.addEventListener("load", () => heroVideos.forEach(kickHeroVideo));
+// Some browsers (e.g. iPhones in Low Power Mode) refuse to autoplay even muted video until the visitor
+// touches the page: give the clips one more try on the first touch, click, key press or scroll.
+["pointerdown", "touchstart", "keydown", "wheel", "scroll"].forEach((name) => {
+  window.addEventListener(name, () => heroVideos.forEach(kickHeroVideo), { once: true, passive: true });
+});
+// Resolves once every hero clip that is actually shown is playing - or after 4 s, so a browser that
+// blocks autoplay can never hold anything else back.
+const heroPlaying = new Promise((resolve) => {
+  const waiting = new Set(heroVideos.filter((v) => v.getAttribute("src")));
+  const check = () => {
+    waiting.forEach((v) => { if (!v.paused && v.readyState >= 3) waiting.delete(v); });
+    if (!waiting.size) resolve();
+  };
+  heroVideos.forEach((v) => v.addEventListener("playing", check));
+  setTimeout(resolve, 4000);
+  check();
 });
 
 /* ---------- Site background video: crossfaded loop, always smooth ---------- */
@@ -37,20 +87,48 @@ document.querySelectorAll(".hero-loop").forEach((v) => {
     return (1 - Math.cos(phase)) / 2;
   }
 
+  // The page starts with the plain dark background; once the clips run they fade in over 1.5 s (rather
+  // than popping in), then the crossfade loop below carries on exactly as before.
+  let tickStart = 0;
+  let rampStart = 0;
   function tick() {
-    a.style.opacity = crossfade(a);
-    b.style.opacity = crossfade(b);
+    const now = performance.now();
+    if (!rampStart && ((a.readyState >= 3 && b.readyState >= 3 && !a.paused && !b.paused) || now - tickStart > 3000)) rampStart = now;
+    const fadeIn = rampStart ? Math.min(1, (now - rampStart) / 1500) : 0;
+    a.style.opacity = crossfade(a) * fadeIn;
+    b.style.opacity = crossfade(b) * fadeIn;
     requestAnimationFrame(tick);
   }
 
-  Promise.all([whenReady(a), whenReady(b)]).then(() => {
-    a.playbackRate = speed;
-    b.playbackRate = speed;
-    try { b.currentTime = a.duration / 2; } catch (e) {}
-    a.play().catch(() => {});
-    b.play().catch(() => {});
-    requestAnimationFrame(tick);
+  // The two clips are the same ~20 MB file. They are not fetched until the hero clips are playing and the
+  // page has finished loading, so the hero gets the whole connection first.
+  let started = false;
+  function startBackground() {
+    if (started) return;
+    started = true;
+    [a, b].forEach((v) => { v.preload = "auto"; v.src = v.dataset.src; });
+    Promise.all([whenReady(a), whenReady(b)]).then(() => {
+      a.playbackRate = speed;
+      b.playbackRate = speed;
+      try { b.currentTime = a.duration / 2; } catch (e) {}
+      // While the VSL plays everything else rests; the player's resume() starts these two again.
+      if (!document.body.classList.contains("vsl-playing")) {
+        a.play().catch(() => {});
+        b.play().catch(() => {});
+      }
+      tickStart = performance.now();
+      requestAnimationFrame(tick);
+    });
+  }
+  const pageLoaded = new Promise((resolve) => {
+    if (document.readyState === "complete") resolve();
+    else window.addEventListener("load", () => resolve(), { once: true });
   });
+  Promise.all([heroPlaying, pageLoaded]).then(() => {
+    if ("requestIdleCallback" in window) requestIdleCallback(startBackground, { timeout: 1500 });
+    else setTimeout(startBackground, 200);
+  });
+  setTimeout(startBackground, 8000); // never wait longer than this
 })();
 
 /* ---------- Center the hero rule above “Fast turnaround” ---------- */
@@ -91,10 +169,19 @@ document.querySelectorAll(".hero-loop").forEach((v) => {
 })();
 
 /* ---------- Shared: autoplay preview videos as they scroll into view ---------- */
+// Preview clips start with no file attached (data-src, preload="none") so nothing is downloaded at
+// page load; this attaches the file the first time it is needed.
+function attachLazySource(video, preload) {
+  if (!video.dataset.src) return;
+  video.preload = preload || "auto";
+  video.src = video.dataset.src;
+  delete video.dataset.src;
+}
 const scrollAutoplayObserver = new IntersectionObserver((entries) => {
   entries.forEach((entry) => {
     const video = entry.target;
     if (entry.isIntersecting) {
+      attachLazySource(video);
       video.play().catch(() => {});
     } else {
       video.pause();
@@ -134,7 +221,6 @@ const workItems = [
   { cats: ["short"], label: "Short-Form", file: "shortform/video-5.mp4" },
   { cats: ["short"], label: "Short-Form", file: "shortform/video-6.mp4" },
   { cats: ["short"], label: "Short-Form", file: "shortform/video-7.mp4", hideFromAll: true },
-  { cats: ["short"], label: "Short-Form", file: "shortform/video-8.mp4" },
   { cats: ["vlogs"], label: "Vlogs", file: "vlogs/betting-vlog-preview.mp4" },
   { cats: ["vlogs"], label: "Vlogs", file: "vlogs/vlog-01-preview.mp4" },
   { cats: ["vlogs"], label: "Vlogs", file: "vlogs/vlog-2-preview.mp4" },
@@ -147,6 +233,15 @@ const workItems = [
 
 const workGrid = document.getElementById("work-grid");
 let activeWorkFilter = "all";
+const workPosterLoaders = [];
+function setWorkCardFormat(card, isLandscape) {
+  card.dataset.format = isLandscape ? "landscape" : "reel";
+  card.classList.toggle("landscape", isLandscape);
+  // Only touch visibility for the "all" view, and only in the direction
+  // of hiding landscape cards - never force-unhide, or this would undo
+  // the permanent hideFromAll flag on cards that happen to be portrait.
+  if (activeWorkFilter === "all" && isLandscape) card.classList.add("hidden");
+}
 workItems.forEach((item) => {
   const src = `${PORTFOLIO_BASE}${item.file}`;
   // The grid only ever shows these at thumbnail size, so the on-hover
@@ -168,31 +263,59 @@ workItems.forEach((item) => {
     // actual category tab still reveals them normally.
     card.classList.add("hidden");
   }
+  // Nothing for this card is downloaded at page load: the poster still is fetched later by
+  // loadWorkPosters() (below), and the preview clip only when the visitor first hovers the card.
   card.innerHTML = `
-    <video muted loop playsinline preload="metadata" poster="${poster}">
-      <source src="${gridSrc}" type="video/mp4">
-    </video>
+    <video muted loop playsinline preload="none" data-src="${gridSrc}"></video>
     <span class="work-card-tag">${item.label}</span>
   `;
   const video = card.querySelector("video");
-  video.addEventListener("loadedmetadata", () => {
-    const isLandscape = video.videoWidth >= video.videoHeight;
-    card.dataset.format = isLandscape ? "landscape" : "reel";
-    card.classList.toggle("landscape", isLandscape);
-    // Only touch visibility for the "all" view, and only in the direction
-    // of hiding landscape cards - never force-unhide, or this would undo
-    // the permanent hideFromAll flag on cards that happen to be portrait.
-    if (activeWorkFilter === "all" && isLandscape) card.classList.add("hidden");
-  }, { once: true });
+  // The card's shape comes from the poster still (same shape as the clip), so no video
+  // file has to be opened just to find out whether it is a reel or landscape.
+  workPosterLoaders.push(() => {
+    const still = new Image();
+    still.decoding = "async";
+    still.onload = () => {
+      video.poster = poster;
+      setWorkCardFormat(card, still.naturalWidth >= still.naturalHeight);
+    };
+    still.onerror = () => {
+      // Poster could not be read: fall back to opening the preview clip, as the grid used to.
+      video.poster = poster;
+      video.addEventListener("loadedmetadata", () => setWorkCardFormat(card, video.videoWidth >= video.videoHeight), { once: true });
+      attachLazySource(video, "metadata");
+    };
+    still.src = poster;
+  });
   // Preview plays only on hover, not on scroll-into-view — with 21 cards in
   // this grid, autoplaying every card that scrolls 50% into view meant
   // several 1080p videos could be decoding at once, which is what caused
   // the stutter/lag.
-  card.addEventListener("mouseenter", () => { video.currentTime = 0; video.play().catch(() => {}); });
+  card.addEventListener("mouseenter", () => { attachLazySource(video); video.currentTime = 0; video.play().catch(() => {}); });
   card.addEventListener("mouseleave", () => { video.pause(); video.currentTime = 0; });
   card.addEventListener("click", () => openLightbox(src));
   workGrid.appendChild(card);
 });
+
+// Fetch the poster stills (and so set every card's shape) once Our Work is about to come into view.
+let workPostersRequested = false;
+function loadWorkPosters() {
+  if (workPostersRequested) return;
+  workPostersRequested = true;
+  workPosterLoaders.forEach((load) => load());
+}
+const workSectionEl = document.getElementById("work");
+if (workSectionEl && "IntersectionObserver" in window) {
+  const workNearObserver = new IntersectionObserver((entries) => {
+    if (entries.some((e) => e.isIntersecting)) {
+      workNearObserver.disconnect();
+      loadWorkPosters();
+    }
+  }, { rootMargin: "1200px 0px" });
+  workNearObserver.observe(workSectionEl);
+} else {
+  loadWorkPosters();
+}
 
 const filterTabs = document.querySelectorAll(".filter-tab");
 
@@ -863,7 +986,7 @@ pricingGrid.addEventListener("click", (e) => {
 
 /* ---------- Proof / testimonials ---------- */
 // Each card shows a small still (poster) until its muted preview plays; the previews
-// only load and play while a card is on screen (preload="metadata" + registerAutoplayVideo).
+// only load and play while a card is on screen (preload="none" + registerAutoplayVideo).
 const videoTestimonials = [
   { name: "Aaron", file: "assets/testimonials/videos/aaron-testimonial.mp4", poster: "assets/testimonials/posters/aaron.jpg" },
   { name: "Jaime", file: "assets/testimonials/videos/jaime-testimonial.mp4", poster: "assets/testimonials/posters/jaime.jpg" },
@@ -885,9 +1008,7 @@ videoTestimonials.forEach(t => {
   card.setAttribute("role", "button");
   card.setAttribute("aria-label", `Play ${t.name}'s video testimonial`);
   card.innerHTML = `
-    <video muted loop playsinline preload="metadata" poster="${t.poster}">
-      <source src="${t.file}" type="video/mp4">
-    </video>
+    <video muted loop playsinline preload="none" data-src="${t.file}"></video>
     <span class="proof-play-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
     <span class="proof-video-name">${t.name}</span>
   `;
@@ -903,6 +1024,19 @@ videoTestimonials.forEach(t => {
   });
   proofVideoGrid.appendChild(card);
 });
+// Nothing here is downloaded at page load: the poster stills are fetched once the testimonials are
+// within ~1000px of the screen, and each preview clip when its card first scrolls into view
+// (attachLazySource in the shared autoplay observer above).
+(function () {
+  const setPosters = () => {
+    proofVideoGrid.querySelectorAll("video").forEach((v, i) => { v.poster = videoTestimonials[i].poster; });
+  };
+  if (!("IntersectionObserver" in window)) { setPosters(); return; }
+  const near = new IntersectionObserver((entries) => {
+    if (entries.some((e) => e.isIntersecting)) { near.disconnect(); setPosters(); }
+  }, { rootMargin: "1000px 0px" });
+  near.observe(proofVideoGrid);
+})();
 
 /* ---------- FAQ ---------- */
 // Answers are our own trusted copy. A plain string is wrapped in a <p>;
@@ -1114,7 +1248,9 @@ document.querySelectorAll(".reveal").forEach(el => revealObserver.observe(el));
   }
   function resume() {
     document.body.classList.remove("vsl-playing");
-    document.querySelectorAll(".bg-fixed-video").forEach((v) => v.play().catch(() => {}));
+    // Only the background clips that already have their file (they are attached after the hero is
+    // playing); a still-empty one must not start loading here.
+    document.querySelectorAll(".bg-fixed-video[src]").forEach((v) => v.play().catch(() => {}));
     document.querySelectorAll(".hero-loop").forEach((v) => { heroVideoObserver.unobserve(v); heroVideoObserver.observe(v); });
   }
   function start() {
