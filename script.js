@@ -862,13 +862,18 @@ pricingGrid.addEventListener("click", (e) => {
 });
 
 /* ---------- Proof / testimonials ---------- */
+// Each card shows a small still (poster) until its muted preview plays; the previews
+// only load and play while a card is on screen (preload="metadata" + registerAutoplayVideo).
 const videoTestimonials = [
-  { name: "Aaron", file: "assets/testimonials/videos/aaron-testimonial.mp4" },
-  { name: "Jaime", file: "assets/testimonials/videos/jaime-testimonial.mp4" },
-  { name: "Ramses", file: "assets/testimonials/videos/ramses-testimonial.mp4" },
+  { name: "Aaron", file: "assets/testimonials/videos/aaron-testimonial.mp4", poster: "assets/testimonials/posters/aaron.jpg" },
+  { name: "Jaime", file: "assets/testimonials/videos/jaime-testimonial.mp4", poster: "assets/testimonials/posters/jaime.jpg" },
+  { name: "Ramses", file: "assets/testimonials/videos/ramses-testimonial.mp4", poster: "assets/testimonials/posters/ramses.jpg" },
+  { name: "Christian", file: "assets/testimonials/videos/christian-testimonial.mp4", poster: "assets/testimonials/posters/christian.jpg" },
+  { name: "Cacau", file: "assets/testimonials/videos/cacau-testimonial.mp4", poster: "assets/testimonials/posters/cacau.jpg" },
+  { name: "Joe", file: "assets/testimonials/videos/joe-testimonial.mp4", poster: "assets/testimonials/posters/joe.jpg" },
 ];
 const proofVideoGrid = document.getElementById("proof-video-grid");
-// The three portrait cards fade in together as one group. (The reveal class sits
+// The portrait cards fade in together as one group. (The reveal class sits
 // on the grid, not on each card, so the cards' own hover "pop" transform is never
 // fighting the reveal transform, and a card scrolled in sideways on phones is
 // never stuck invisible.)
@@ -880,7 +885,7 @@ videoTestimonials.forEach(t => {
   card.setAttribute("role", "button");
   card.setAttribute("aria-label", `Play ${t.name}'s video testimonial`);
   card.innerHTML = `
-    <video muted loop playsinline preload="metadata">
+    <video muted loop playsinline preload="metadata" poster="${t.poster}">
       <source src="${t.file}" type="video/mp4">
     </video>
     <span class="proof-play-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
