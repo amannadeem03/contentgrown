@@ -1167,18 +1167,23 @@ section[id], #top { scroll-margin-top: 6.875rem; }
 .proof { padding: 5rem 0; }
 .proof .section-inner > h2 { margin-bottom: 2.75rem; }
 
-/* Client video testimonials: six vertical (9:16) cards, as the originals were
-   shot. Three across and centred, so six cards make two even rows; each card is
-   capped at 18rem wide (about 32rem tall) so they never get absurdly tall. On
-   phones the cards become one swipeable snap-scroll strip (see the 560px block
-   in the Responsive section).
+/* Client video testimonials: six vertical (9:16) cards, as the originals were shot, always in
+   ONE line - never a second row. On desktop (above 900px) the six cards share one row of
+   equal columns. The row is wider than the narrow heading container: it is as wide as the
+   viewport allows up to 82rem (a 1.5rem gutter each side), centred under the left-aligned
+   heading by a symmetric margin, so each card stays about 12-13rem wide (about 23rem tall).
+   At 900px and below the same line becomes a swipeable snap-scroll strip (see the 900px and
+   560px blocks in the Responsive section).
    The .reveal fade lives on the grid (added in script.js), not on the cards, so
-   the hover "pop" below is the only transform on a card. */
+   the hover "pop" below is the only transform on a card. Nothing on desktop clips
+   the row, so the grown / lifted card and its shadow are never cut off. */
 .proof-video-grid {
+  --proof-row-w: min(82rem, 100vw - 3rem);
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 18rem));
-  justify-content: center;
-  gap: 1.5rem;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 1rem;
+  width: var(--proof-row-w);
+  margin-inline: calc((100% - var(--proof-row-w)) / 2);
 }
 .proof-video-card {
   position: relative;
@@ -1202,7 +1207,7 @@ section[id], #top { scroll-margin-top: 6.875rem; }
 .proof-play-icon {
   position: absolute; top: 50%; left: 50%;
   transform: translate(-50%, -50%);
-  width: 2.875rem; height: 2.875rem;
+  width: 2.4rem; height: 2.4rem;
   border-radius: 50%;
   background: rgba(10, 10, 9, 0.55);
   border: 1px solid rgba(255, 255, 255, 0.16);
@@ -1210,13 +1215,13 @@ section[id], #top { scroll-margin-top: 6.875rem; }
   z-index: 1;
   transition: background 0.3s var(--ease-soft), transform 0.3s var(--pop-ease);
 }
-.proof-play-icon svg { width: 1rem; height: 1rem; color: var(--chalk); transition: color 0.3s var(--ease-soft); }
+.proof-play-icon svg { width: 0.9rem; height: 0.9rem; color: var(--chalk); transition: color 0.3s var(--ease-soft); }
 .proof-video-name {
-  position: absolute; bottom: 0.875rem; left: 1rem;
+  position: absolute; bottom: 0.75rem; left: 0.8rem;
   z-index: 1;
   font-family: var(--font-body);
   font-weight: 500;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   letter-spacing: 0.01em;
   color: var(--chalk);
   text-shadow: 0 1px 0.5rem rgba(0, 0, 0, 0.55);
@@ -1717,30 +1722,32 @@ section[id], #top { scroll-margin-top: 6.875rem; }
   .services-list { width:100%; height:auto; display:grid; gap:0.75rem; perspective:none; }
   .service-row, .service-row.active, .service-row.previous, .service-row.next { position:relative; left:auto; top:auto; width:100%; height:auto; min-height:11.875rem; transform:none; opacity:1; filter:none; pointer-events:auto; }
   .services-dots, .services-note { display:none; }
-  /* tablet: still three across (two rows) and centred, just smaller (15rem cap, about 27rem tall) */
-  .proof-video-grid { grid-template-columns: repeat(3, minmax(0, 15rem)); gap: 1rem; }
-}
-@media (max-width: 560px) {
-  .stat-item { min-width: 8.25rem; padding: 1rem 0.75rem; }
-  .work-grid { grid-template-columns: repeat(2, 1fr); }
-  /* phones: one swipeable strip of vertical cards that snap to the left gutter, with the
-     next card peeking in. It bleeds out past the section's 1.5rem side padding to the screen
-     edges, and the padding gives a popped (grown/lifted) card room inside the scroll clip. The
-     negative margins cancel that padding (top and bottom), so the strip adds no space of its
-     own: the section's 5rem padding alone sets the gap above and below the cards. */
+  /* tablet and phones: still ONE line - a swipeable strip of 11rem vertical cards that snap to
+     the left gutter, with the next ones peeking in. It bleeds out past the section's 1.5rem side
+     padding to the screen edges, and the padding gives a popped (grown/lifted) card room inside
+     the scroll clip. The negative margins cancel that padding (top and bottom), so the strip adds
+     no space of its own: the section's 5rem padding alone sets the gap above and below the cards.
+     The right padding lets the last card scroll right up to the gutter. */
   .proof-video-grid {
     display: flex;
-    justify-content: flex-start;
     gap: 1rem;
+    width: auto;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     scroll-padding-inline: 1.5rem;
     scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
     padding: 1.25rem 1.5rem 3rem;
     margin: -1.25rem -1.5rem -3rem;
   }
   .proof-video-grid::-webkit-scrollbar { display: none; }
-  .proof-video-card { flex: 0 0 min(15rem, 68vw); scroll-snap-align: start; }
+  .proof-video-card { flex: 0 0 11rem; scroll-snap-align: start; }
+}
+@media (max-width: 560px) {
+  .stat-item { min-width: 8.25rem; padding: 1rem 0.75rem; }
+  .work-grid { grid-template-columns: repeat(2, 1fr); }
+  /* phones: the same one-line strip (see the 900px block), with slightly bigger 12.5rem cards */
+  .proof-video-card { flex-basis: 12.5rem; }
   .site-footer { padding: 3rem 0 0; }
   .footer-inner { gap: 2rem; padding-bottom: 3rem; }
   /* footer logo: a fixed 2.1rem height would be wider than a 340px screen, so size it by width (same aspect ratio) */
