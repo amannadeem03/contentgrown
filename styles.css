@@ -1081,10 +1081,11 @@ section[id], #top { scroll-margin-top: 6.875rem; }
 .proof { padding: 5rem 0; }
 .proof .section-inner > h2 { margin-bottom: 2.75rem; }
 
-/* Client video testimonials: three vertical (9:16) cards, as the originals were
-   shot. Three across and centred; each card is capped at 18rem wide (about 32rem
-   tall) so they never get absurdly tall. On phones the row becomes a swipeable
-   snap-scroll strip (see the 560px block in the Responsive section).
+/* Client video testimonials: six vertical (9:16) cards, as the originals were
+   shot. Three across and centred, so six cards make two even rows; each card is
+   capped at 18rem wide (about 32rem tall) so they never get absurdly tall. On
+   phones the cards become one swipeable snap-scroll strip (see the 560px block
+   in the Responsive section).
    The .reveal fade lives on the grid (added in script.js), not on the cards, so
    the hover "pop" below is the only transform on a card. */
 .proof-video-grid {
@@ -1630,7 +1631,7 @@ section[id], #top { scroll-margin-top: 6.875rem; }
   .services-list { width:100%; height:auto; display:grid; gap:0.75rem; perspective:none; }
   .service-row, .service-row.active, .service-row.previous, .service-row.next { position:relative; left:auto; top:auto; width:100%; height:auto; min-height:11.875rem; transform:none; opacity:1; filter:none; pointer-events:auto; }
   .services-dots, .services-note { display:none; }
-  /* tablet: still three across and centred, just smaller (15rem cap, about 27rem tall) */
+  /* tablet: still three across (two rows) and centred, just smaller (15rem cap, about 27rem tall) */
   .proof-video-grid { grid-template-columns: repeat(3, minmax(0, 15rem)); gap: 1rem; }
 }
 @media (max-width: 560px) {
