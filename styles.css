@@ -850,14 +850,14 @@ section[id], #top { scroll-margin-top: 6.875rem; }
   padding: 0;
   border-radius: 50%;
   border: 0;
-  background: rgba(236, 236, 236, 0.94);
-  color: #0b0908;
+  background: rgba(11, 9, 8, 0.9);
+  color: #fff;
   cursor: pointer;
-  box-shadow: none;
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.22);
   transition: transform 0.28s var(--btn-ease), opacity 0.2s ease, background-color 0.28s ease;
 }
 .vsl-play svg { display: block; width: 1.3rem; height: 1.3rem; margin-left: 0.15rem; }
-.vsl-play:hover { background: #fff; }
+.vsl-play:hover { background: #0b0908; }
 @media (hover: hover) and (pointer: fine) {
   .vsl-play:hover,
   .vsl-play:focus-visible { transform: scale(1.08); }
