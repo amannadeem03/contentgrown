@@ -13,57 +13,38 @@ function attachHeroSources() {
 attachHeroSources();
 if (heroNarrowQuery.addEventListener) heroNarrowQuery.addEventListener("change", attachHeroSources);
 
-// Starts a clip unless it is off screen, paused for the VSL, or already running.
+// The clips autoplay and loop on their own (muted + autoplay + loop in the markup; the files are cut so the
+// native wrap is a soft dissolve). Nothing below ever seeks them or restarts one that is playing: this only
+// starts a clip that is NOT playing - a browser that held autoplay back, or a clip returning into view.
 function kickHeroVideo(v) {
+  if (!v.getAttribute("src") || !v.paused) return;
   if (v.dataset.offscreen === "1" || document.body.classList.contains("vsl-playing")) return;
-  if (!v.getAttribute("src") || !(v.paused || v.ended)) return;
   v.play().catch(() => {});
 }
-// The observer only ever PAUSES clips that scrolled out of view (and restarts them on return); the hero
-// is on screen at load, so the clips are never held back waiting for it.
+// A clip is paused only once it is completely out of view with a wide margin (300px), and resumed when it
+// comes back - small scroll movements near the edge of the screen never toggle it.
 const heroVideoObserver = new IntersectionObserver((entries) => {
   entries.forEach((entry) => {
     const v = entry.target;
-    if (entry.isIntersecting && !document.body.classList.contains("vsl-playing")) {
+    if (entry.isIntersecting) {
       delete v.dataset.offscreen;
       kickHeroVideo(v);
     } else {
-      if (!entry.isIntersecting) v.dataset.offscreen = "1";
-      v.pause();
+      v.dataset.offscreen = "1";
+      if (!v.paused) v.pause();
     }
   });
-}, { threshold: 0 });
+}, { rootMargin: "300px 0px", threshold: 0 });
 heroVideos.forEach((v) => {
-  v.addEventListener("ended", () => {
-    v.currentTime = 0;
-    v.play().catch(() => {});
-  });
-  // Try again the moment there is something to play, in case the first play() came too early.
-  v.addEventListener("loadeddata", () => kickHeroVideo(v));
-  v.addEventListener("canplay", () => kickHeroVideo(v));
-  // Only decode the hero clips while the hero is on screen - four videos
-  // playing out of sight were competing with the background for decoders.
+  v.loop = true;
+  // One more try the moment there is something to play, only matters if autoplay was held back.
+  v.addEventListener("loadeddata", () => kickHeroVideo(v), { once: true });
   heroVideoObserver.observe(v);
-  kickHeroVideo(v);
 });
-document.addEventListener("DOMContentLoaded", () => heroVideos.forEach(kickHeroVideo));
-window.addEventListener("load", () => heroVideos.forEach(kickHeroVideo));
 // Some browsers (e.g. iPhones in Low Power Mode) refuse to autoplay even muted video until the visitor
 // touches the page: give the clips one more try on the first touch, click, key press or scroll.
 ["pointerdown", "touchstart", "keydown", "wheel", "scroll"].forEach((name) => {
   window.addEventListener(name, () => heroVideos.forEach(kickHeroVideo), { once: true, passive: true });
-});
-// Resolves once every hero clip that is actually shown is playing - or after 4 s, so a browser that
-// blocks autoplay can never hold anything else back.
-const heroPlaying = new Promise((resolve) => {
-  const waiting = new Set(heroVideos.filter((v) => v.getAttribute("src")));
-  const check = () => {
-    waiting.forEach((v) => { if (!v.paused && v.readyState >= 3) waiting.delete(v); });
-    if (!waiting.size) resolve();
-  };
-  heroVideos.forEach((v) => v.addEventListener("playing", check));
-  setTimeout(resolve, 4000);
-  check();
 });
 
 /* ---------- Site background video: crossfaded loop, always smooth ---------- */
@@ -100,13 +81,19 @@ const heroPlaying = new Promise((resolve) => {
     requestAnimationFrame(tick);
   }
 
-  // The two clips are the same ~20 MB file. They are not fetched until the hero clips are playing and the
-  // page has finished loading, so the hero gets the whole connection first.
+  // The two clips are the same ~20 MB file. While the hero is on screen they sit behind the four hero clips
+  // and their dark shade, so they are not worth any bandwidth or decoder time: nothing is fetched or
+  // played until the visitor scrolls past ~60% of the hero. (Idling at the top for a long while only
+  // pre-buffers the file, without decoding or fading in, so the first scroll finds it ready.)
   let started = false;
+  function attachBackground() {
+    if (a.getAttribute("src")) return;
+    [a, b].forEach((v) => { v.preload = "auto"; v.src = v.dataset.src; });
+  }
   function startBackground() {
     if (started) return;
     started = true;
-    [a, b].forEach((v) => { v.preload = "auto"; v.src = v.dataset.src; });
+    attachBackground();
     Promise.all([whenReady(a), whenReady(b)]).then(() => {
       a.playbackRate = speed;
       b.playbackRate = speed;
@@ -120,15 +107,30 @@ const heroPlaying = new Promise((resolve) => {
       requestAnimationFrame(tick);
     });
   }
-  const pageLoaded = new Promise((resolve) => {
-    if (document.readyState === "complete") resolve();
-    else window.addEventListener("load", () => resolve(), { once: true });
-  });
-  Promise.all([heroPlaying, pageLoaded]).then(() => {
-    if ("requestIdleCallback" in window) requestIdleCallback(startBackground, { timeout: 1500 });
+  const heroSection = document.getElementById("hero");
+  function scheduleBackground() {
+    if ("requestIdleCallback" in window) requestIdleCallback(startBackground, { timeout: 1000 });
     else setTimeout(startBackground, 200);
-  });
-  setTimeout(startBackground, 8000); // never wait longer than this
+  }
+  // Past ~60% of the hero = less than 40% of it is still on screen. Also true for a page that is opened
+  // or reloaded part-way down, or that jumps straight to a section from the menu.
+  function checkScrolledPastHero() {
+    if (started) return;
+    const r = heroSection ? heroSection.getBoundingClientRect() : null;
+    if (!r || r.bottom < r.height * 0.4) {
+      window.removeEventListener("scroll", checkScrolledPastHero);
+      scheduleBackground();
+    }
+  }
+  window.addEventListener("scroll", checkScrolledPastHero, { passive: true });
+  if (document.readyState === "complete") checkScrolledPastHero();
+  else window.addEventListener("load", checkScrolledPastHero, { once: true });
+  // Still at the top after a long wait: pre-buffer only.
+  setTimeout(() => {
+    if (started) return;
+    if ("requestIdleCallback" in window) requestIdleCallback(attachBackground, { timeout: 2000 });
+    else attachBackground();
+  }, 25000);
 })();
 
 /* ---------- Center the hero rule above “Fast turnaround” ---------- */
@@ -168,6 +170,13 @@ const heroPlaying = new Promise((resolve) => {
   centerActions();
 })();
 
+/* ---------- Everything below the hero: set up once the hero clips are playing ----------
+   The hero clips start by themselves (autoplay), but starting them needs the main thread, and building the
+   page's cards, pricing, FAQ, menus and scroll effects takes a few hundred ms of it. So that work (initPage,
+   which runs to the end of this file) waits until the clips have been playing for ~1 s - or the visitor's first
+   touch / click / key / scroll, or 3.5 s at the latest, or a #link in the address (built at once) - instead of
+   delaying the clips. Same page, built a moment later. */
+function* initPage() {
 /* ---------- Shared: autoplay preview videos as they scroll into view ---------- */
 // Preview clips start with no file attached (data-src, preload="none") so nothing is downloaded at
 // page load; this attaches the file the first time it is needed.
@@ -194,6 +203,7 @@ function registerAutoplayVideo(video) {
 
 const PORTFOLIO_BASE = "assets/portfolio/";
 
+yield; // chunk boundary: the browser can draw video frames / handle input between chunks
 /* ---------- Work grid data (real client work) ---------- */
 const workItems = [
   { cats: ["ads"], label: "Ads", file: "ads/ad-1.mp4" },
@@ -374,6 +384,7 @@ filterTabs.forEach(tab => {
   });
 });
 
+yield;
 /* ---------- Services ---------- */
 const services = [
   { tag: "Content Production", title: "Video Editing", desc: "Scroll-stopping edits built for stronger pacing, clarity, and retention." },
@@ -465,6 +476,7 @@ services.forEach((s, i) => {
   updateTarget();
 })();
 
+yield;
 /* ---------- Header services menu (desktop dropdown + mobile accordion) ---------- */
 // The four options are the What We Do cards, in the same order (the card's line break becomes a space).
 const serviceLabels = services.map(s => s.title.replace(/<br\s*\/?>/g, " "));
@@ -581,6 +593,7 @@ mobileServicesToggle.addEventListener("click", () => {
   mobileServicesToggle.setAttribute("aria-expanded", String(open));
 });
 
+yield;
 /* ---------- How it works ---------- */
 const steps = [
   { title: "Discovery Call", desc: "We look at what you're producing now, where it's breaking down, and what your output actually needs to be. Twenty minutes, no obligation." },
@@ -668,6 +681,7 @@ window.addEventListener("resize", () => {
 });
 requestHowScrollUpdate();
 
+yield;
 /* ---------- Pricing packages ---------- */
 // Feature icons: 24x24 line icons drawn with currentColor; "spark" is a small filled four-point star.
 const pricingIcons = {
@@ -1020,55 +1034,38 @@ pricingGrid.addEventListener("click", (e) => {
   openChooser(btn.dataset.tier, btn.dataset.plan, btn);
 });
 
+yield;
 /* ---------- Proof / testimonials ---------- */
 // Each card shows a small still (poster) until its muted preview plays; the previews
 // only load and play while a card is on screen (preload="none" + registerAutoplayVideo).
 const videoTestimonials = [
   { name: "Aaron", file: "assets/testimonials/videos/aaron-testimonial.mp4", poster: "assets/testimonials/posters/aaron.jpg" },
   { name: "Jaime", file: "assets/testimonials/videos/jaime-testimonial.mp4", poster: "assets/testimonials/posters/jaime.jpg" },
-  { name: "Ramses", file: "assets/testimonials/videos/ramses-testimonial.mp4", poster: "assets/testimonials/posters/ramses.jpg" },
   { name: "Christian", file: "assets/testimonials/videos/christian-testimonial.mp4", poster: "assets/testimonials/posters/christian.jpg" },
+  { name: "Billy", file: "assets/testimonials/videos/guest-testimonial.mp4", poster: "assets/testimonials/posters/guest.jpg" },
   { name: "Cacau", file: "assets/testimonials/videos/cacau-testimonial.mp4", poster: "assets/testimonials/posters/cacau.jpg" },
   { name: "Joe", file: "assets/testimonials/videos/joe-testimonial.mp4", poster: "assets/testimonials/posters/joe.jpg" },
-  { name: "Client", file: "assets/testimonials/videos/guest-testimonial.mp4", poster: "assets/testimonials/posters/guest.jpg" },
+  { name: "Ramses", file: "assets/testimonials/videos/ramses-testimonial.mp4", poster: "assets/testimonials/posters/ramses.jpg" },
 ];
 const proofVideoGrid = document.getElementById("proof-video-grid");
-// Sliding row: #proof-video-grid is a full-width window, and one track inside it holds the
-// cards and drifts right-to-left forever (a CSS transform animation, see styles.css). The track
-// holds the real cards first, then aria-hidden clone sets, so it can loop by exactly one set's
-// width with no visible jump. The window fades in as one group (the reveal class sits on the
-// window, not on each card, so a card's own hover "pop" transform never fights the reveal one).
-const proofVideoTrack = document.createElement("div");
-proofVideoTrack.className = "proof-video-track";
-proofVideoGrid.appendChild(proofVideoTrack);
-proofVideoGrid.classList.add("reveal", "is-offscreen"); // paused until the row is on screen (below)
-proofVideoGrid.style.setProperty("--n", String(videoTestimonials.length)); // CSS: cycle time = cards x seconds per card
-let proofPostersReady = false;
-let proofCopies = 1; // sets of cards in the track: the real one plus its clones
-
-function createProofCard(t, isClone) {
+// The portrait cards fade in together as one group. (The reveal class sits
+// on the grid, not on each card, so the cards' own hover "pop" transform is never
+// fighting the reveal transform, and a card scrolled in sideways on phones is
+// never stuck invisible.)
+proofVideoGrid.classList.add("reveal");
+videoTestimonials.forEach(t => {
   const card = document.createElement("div");
   card.className = "proof-video-card";
-  if (isClone) {
-    // Clones only make the loop seamless: hidden from screen readers and the tab order,
-    // but they play their preview and open the lightbox exactly like the real cards.
-    card.classList.add("is-clone");
-    card.setAttribute("aria-hidden", "true");
-    card.tabIndex = -1;
-  } else {
-    card.tabIndex = 0;
-    card.setAttribute("role", "button");
-    card.setAttribute("aria-label", `Play ${t.name}'s video testimonial`);
-  }
+  card.tabIndex = 0;
+  card.setAttribute("role", "button");
+  card.setAttribute("aria-label", `Play ${t.name}'s video testimonial`);
   card.innerHTML = `
     <video muted loop playsinline preload="none" data-src="${t.file}"></video>
     <span class="proof-play-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
     <span class="proof-video-name">${t.name}</span>
   `;
   const video = card.querySelector("video");
-  video.dataset.poster = t.poster;
-  if (proofPostersReady) video.poster = t.poster;
-  registerAutoplayVideo(video); // same lazy load + play-only-in-view rule for every card, clones included
+  registerAutoplayVideo(video);
   card.addEventListener("click", () => openLightbox(t.file));
   card.addEventListener("keydown", (e) => {
     if (e.target !== card) return;
@@ -1077,87 +1074,14 @@ function createProofCard(t, isClone) {
       openLightbox(t.file);
     }
   });
-  return card;
-}
-videoTestimonials.forEach((t) => proofVideoTrack.appendChild(createProofCard(t, false)));
-
-// Add clone sets until the row can never run out of cards on its right edge while it slides:
-// at least two sets in all, and every set but one together must be as wide as the window.
-// (The CSS slides by exactly one set: -100% / --copies.) Only ever adds sets, never removes.
-const proofMotion = window.matchMedia("(prefers-reduced-motion: no-preference)");
-function fitProofCopies() {
-  if (!proofMotion.matches) return; // reduced motion: a static row, the CSS hides any clones
-  const setWidth = proofVideoTrack.offsetWidth / proofCopies;
-  if (!setWidth) return;
-  const needed = Math.max(2, Math.ceil(proofVideoGrid.offsetWidth / setWidth) + 1);
-  while (proofCopies < needed) {
-    videoTestimonials.forEach((t) => proofVideoTrack.appendChild(createProofCard(t, true)));
-    proofCopies++;
-  }
-  proofVideoGrid.style.setProperty("--copies", String(proofCopies));
-}
-requestAnimationFrame(fitProofCopies); // after first layout, so it costs no extra layout pass
-let proofFitQueued = false;
-window.addEventListener("resize", () => {
-  if (proofFitQueued) return;
-  proofFitQueued = true;
-  requestAnimationFrame(() => { proofFitQueued = false; fitProofCopies(); });
+  proofVideoGrid.appendChild(card);
 });
-proofMotion.addEventListener("change", fitProofCopies);
-
-// Pause rules (the CSS pauses the slide while any of these classes is set; hover and keyboard
-// focus are pure CSS): off-screen, tab in the background, and while a finger is on the row
-// (touch screens keep sliding on their own; touching holds it still, and it resumes 1.5s later).
-(function () {
-  if ("IntersectionObserver" in window) {
-    new IntersectionObserver((entries) => {
-      proofVideoGrid.classList.toggle("is-offscreen", !entries[entries.length - 1].isIntersecting);
-    }).observe(proofVideoGrid);
-  } else {
-    proofVideoGrid.classList.remove("is-offscreen");
-  }
-  const syncTabHidden = () => proofVideoGrid.classList.toggle("is-tab-hidden", document.hidden);
-  document.addEventListener("visibilitychange", syncTabHidden);
-  syncTabHidden();
-  let touchTimer = 0;
-  proofVideoGrid.addEventListener("pointerdown", (e) => {
-    if (e.pointerType === "mouse") return;
-    clearTimeout(touchTimer);
-    proofVideoGrid.classList.add("is-touching");
-  });
-  const touchEnd = (e) => {
-    if (e.pointerType === "mouse") return;
-    clearTimeout(touchTimer);
-    touchTimer = setTimeout(() => proofVideoGrid.classList.remove("is-touching"), 1500);
-  };
-  proofVideoGrid.addEventListener("pointerup", touchEnd);
-  proofVideoGrid.addEventListener("pointercancel", touchEnd);
-
-  // Keyboard: Tab moves through the real cards (the slide pauses on focus, see the CSS). If the
-  // card that gets focus has slid out of the window, jump the slide so it is on screen (in the
-  // middle where the first set's position allows it, otherwise as far left as the set can go).
-  proofVideoTrack.addEventListener("focusin", (e) => {
-    const card = e.target.closest(".proof-video-card");
-    if (!card || !card.matches(":focus-visible")) return;
-    const win = proofVideoGrid.getBoundingClientRect();
-    const box = card.getBoundingClientRect();
-    if (box.left >= win.left && box.right <= win.right) return;
-    const anim = proofVideoTrack.getAnimations()[0];
-    if (!anim) return;
-    const setWidth = proofVideoTrack.offsetWidth / proofCopies;
-    const x = [...proofVideoTrack.children].indexOf(card) * (setWidth / videoTestimonials.length);
-    const offset = Math.min(Math.max(x - (win.width - box.width) / 2, 0), setWidth);
-    anim.currentTime = (offset / setWidth) * anim.effect.getComputedTiming().duration;
-  });
-})();
-
 // Nothing here is downloaded at page load: the poster stills are fetched once the testimonials are
 // within ~1000px of the screen, and each preview clip when its card first scrolls into view
 // (attachLazySource in the shared autoplay observer above).
 (function () {
   const setPosters = () => {
-    proofPostersReady = true;
-    proofVideoTrack.querySelectorAll("video").forEach((v) => { v.poster = v.dataset.poster; });
+    proofVideoGrid.querySelectorAll("video").forEach((v, i) => { v.poster = videoTestimonials[i].poster; });
   };
   if (!("IntersectionObserver" in window)) { setPosters(); return; }
   const near = new IntersectionObserver((entries) => {
@@ -1166,6 +1090,7 @@ proofMotion.addEventListener("change", fitProofCopies);
   near.observe(proofVideoGrid);
 })();
 
+yield;
 /* ---------- FAQ ---------- */
 // Answers are our own trusted copy. A plain string is wrapped in a <p>;
 // a string that starts with a tag (e.g. "<p>..</p><ul>..</ul>") is inserted as-is.
@@ -1213,6 +1138,7 @@ faqs.forEach(f => {
   faqList.appendChild(item);
 });
 
+yield;
 /* ---------- Liquid bubble stat bar ---------- */
 (function () {
   const section = document.getElementById("stat-bar-section");
@@ -1350,6 +1276,7 @@ faqs.forEach(f => {
   if (isDesktop()) requestScrollUpdate(); else requestBarScrollUpdate();
 })();
 
+yield;
 /* ---------- Scroll reveal ---------- */
 const revealObserver = new IntersectionObserver((entries) => {
   entries.forEach(entry => {
@@ -1479,3 +1406,45 @@ function closeLightbox() {
 lightboxClose.addEventListener("click", closeLightbox);
 lightbox.addEventListener("click", (e) => { if (e.target === lightbox) closeLightbox(); });
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeLightbox(); });
+} // end of initPage
+
+// Runs initPage() (see the note above it) one chunk at a time: each `yield;` in it is a boundary where the
+// browser gets the main thread back for a moment, so no single piece of set-up is long enough to be felt.
+(function () {
+  const chunks = initPage(); // a generator: nothing runs until the first next()
+  const gestures = ["pointerdown", "touchstart", "keydown", "wheel", "scroll"];
+  let state = 0; // 0 waiting for the clips, 1 working through the chunks, 2 finished
+  function done() {
+    state = 2;
+    gestures.forEach((name) => window.removeEventListener(name, finishNow));
+  }
+  // The visitor touched the page (or landed on a #section): everything that is left is built right now,
+  // so a click / scroll / hover can never find a half-built page.
+  function finishNow() {
+    if (state === 2) return;
+    done();
+    while (!chunks.next().done) { /* run the remaining chunks */ }
+  }
+  function nextChunk() {
+    if (state === 2) return;
+    if (chunks.next().done) { done(); return; }
+    if ("requestIdleCallback" in window) requestIdleCallback(nextChunk, { timeout: 100 });
+    else setTimeout(nextChunk, 16);
+  }
+  function begin() {
+    if (state) return;
+    state = 1;
+    nextChunk();
+  }
+  let scheduled = false;
+  function afterPlaying() {
+    if (scheduled) return;
+    scheduled = true;
+    setTimeout(begin, 500); // let the clips settle into steady playback first
+  }
+  if (location.hash) { finishNow(); return; } // landing on a #section: it has to exist before the browser scrolls there
+  gestures.forEach((name) => window.addEventListener(name, finishNow, { passive: true }));
+  heroVideos.forEach((v) => v.addEventListener("playing", afterPlaying, { once: true }));
+  if (heroVideos.some((v) => !v.paused && v.readyState >= 3)) afterPlaying();
+  setTimeout(begin, 3500); // clips never started (autoplay blocked, slow link): never wait longer than this
+})();

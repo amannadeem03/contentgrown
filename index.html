@@ -14,19 +14,23 @@
 <link rel="icon" type="image/png" href="assets/favicon-192.png" sizes="192x192">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <!-- Stills for the four hero clips: painted straight away while the clips themselves start up. -->
-<link rel="preload" as="image" href="assets/hero-videos/video-01.jpg" fetchpriority="high">
-<link rel="preload" as="image" href="assets/hero-videos/video-1.jpg" fetchpriority="high">
-<link rel="preload" as="image" href="assets/hero-videos/video-3.jpg" fetchpriority="high">
-<link rel="preload" as="image" href="assets/hero-videos/video-27.jpg" fetchpriority="high">
+<link rel="preload" as="image" href="assets/hero-videos/video-01.jpg?v=2" fetchpriority="high">
+<link rel="preload" as="image" href="assets/hero-videos/video-1.jpg?v=2" fetchpriority="high">
+<link rel="preload" as="image" href="assets/hero-videos/video-3.jpg?v=2" fetchpriority="high">
+<link rel="preload" as="image" href="assets/hero-videos/video-27.jpg?v=2" fetchpriority="high">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<!-- The font stylesheet comes from another origin, so it must not hold up the first paint or script.js:
+     it loads as "print" (never blocks) and switches to "all" the moment it arrives (display=swap: text shows
+     at once in the fallback face, then Montserrat takes over). -->
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"></noscript>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
 <div class="bg-fixed" aria-hidden="true">
-  <!-- The ~20 MB site background is only fetched once the four hero clips are playing (see script.js), so it never competes with them. -->
+  <!-- The ~20 MB site background is only fetched once the visitor scrolls past most of the hero (see script.js), so the four hero clips have the connection and the decoders to themselves. -->
   <video class="bg-fixed-video" id="bg-fixed-video-a" data-src="assets/site-bg.mp4" style="opacity:0" muted loop playsinline preload="none"></video>
   <video class="bg-fixed-video" id="bg-fixed-video-b" data-src="assets/site-bg.mp4" style="opacity:0" muted loop playsinline preload="none"></video>
   <div class="aurora"></div>
@@ -37,7 +41,7 @@
 </div>
 <header class="site-header" id="site-header">
   <div class="header-row">
-    <a href="#top" class="logo"><img src="assets/logo-white.png" alt="CONTENTGROWN" class="logo-img"><span class="logo-arrow-overlay" aria-hidden="true"></span></a>
+    <a href="#top" class="logo"><img src="assets/logo-white.png" alt="CONTENTGROWN" class="logo-img" width="1240" height="136" decoding="async" fetchpriority="high"><span class="logo-arrow-overlay" aria-hidden="true"></span></a>
     <nav class="nav">
       <ul class="nav-links" id="nav-links">
         <li><a href="#top" data-target="hero">Home</a></li>
@@ -77,10 +81,10 @@
 
   <section class="hero" id="hero">
     <div class="hero-bg" id="hero-bg" aria-hidden="true">
-      <div class="hero-bg-col"><video class="hero-loop" muted autoplay loop playsinline preload="auto" poster="assets/hero-videos/video-01.jpg" src="assets/hero-videos/video-01.mp4"></video></div>
-      <div class="hero-bg-col"><video class="hero-loop" muted autoplay loop playsinline preload="auto" poster="assets/hero-videos/video-1.jpg" src="assets/hero-videos/video-1.mp4"></video></div>
-      <div class="hero-bg-col"><video class="hero-loop" muted autoplay loop playsinline preload="auto" poster="assets/hero-videos/video-3.jpg" data-src="assets/hero-videos/video-3.mp4"></video></div>
-      <div class="hero-bg-col"><video class="hero-loop" muted autoplay loop playsinline preload="auto" poster="assets/hero-videos/video-27.jpg" data-src="assets/hero-videos/video-27.mp4"></video></div>
+      <div class="hero-bg-col"><video class="hero-loop" muted autoplay loop playsinline preload="auto" poster="assets/hero-videos/video-01.jpg?v=2" src="assets/hero-videos/video-01.mp4?v=2"></video></div>
+      <div class="hero-bg-col"><video class="hero-loop" muted autoplay loop playsinline preload="auto" poster="assets/hero-videos/video-1.jpg?v=2" src="assets/hero-videos/video-1.mp4?v=2"></video></div>
+      <div class="hero-bg-col"><video class="hero-loop" muted autoplay loop playsinline preload="auto" poster="assets/hero-videos/video-3.jpg?v=2" data-src="assets/hero-videos/video-3.mp4?v=2"></video></div>
+      <div class="hero-bg-col"><video class="hero-loop" muted autoplay loop playsinline preload="auto" poster="assets/hero-videos/video-27.jpg?v=2" data-src="assets/hero-videos/video-27.mp4?v=2"></video></div>
     </div>
     <div class="hero-content">
       <div class="eyebrow-rule"></div>
@@ -266,7 +270,7 @@
 <footer class="site-footer">
   <div class="section-inner footer-inner">
     <div class="footer-brand">
-      <a href="#top" class="logo"><img src="assets/logo-white.png" alt="CONTENTGROWN" class="logo-img"><span class="logo-arrow-overlay" aria-hidden="true"></span></a>
+      <a href="#top" class="logo"><img src="assets/logo-white.png" alt="CONTENTGROWN" class="logo-img" width="1240" height="136" decoding="async"><span class="logo-arrow-overlay" aria-hidden="true"></span></a>
     </div>
 
     <!-- Social / contact buttons. To change a profile link, edit the three hrefs marked TODO-URL below. -->
