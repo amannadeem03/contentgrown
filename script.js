@@ -211,8 +211,8 @@ const workItems = [
   { cats: ["vsl"], label: "VSLs", file: "vsls/vsl-4-preview.mp4" },
   { cats: ["vsl"], label: "VSLs", file: "vsls/vsl-5-preview.mp4" },
   { cats: ["vsl"], label: "VSLs", file: "vsls/vsl-6-preview.mp4" },
-  { cats: ["short", "ai"], label: "AI Content", file: "ai-content/mastermind-ad-techy.mp4", hideFromAll: true },
-  { cats: ["short", "ai"], label: "AI Content", file: "ai-content/mastermind-cohort-4.mp4", hideFromAll: true },
+  { cats: ["ai"], label: "AI Content", file: "ai-content/mastermind-ad-techy.mp4", hideFromAll: true },
+  { cats: ["ai"], label: "AI Content", file: "ai-content/mastermind-cohort-4.mp4", hideFromAll: true },
   { cats: ["short"], label: "Short-Form", file: "shortform/video-01.mp4", hideFromAll: true },
   { cats: ["short"], label: "Short-Form", file: "shortform/video-1.mp4" },
   { cats: ["short"], label: "Short-Form", file: "shortform/video-2.mp4" },
@@ -231,18 +231,52 @@ const workItems = [
   { cats: ["long"], label: "Long-Form", file: "longform/long-form-5.mp4" },
 ];
 
+/* ---------- Featured work: what the "All" tab shows ----------
+   ORDER = DISPLAY ORDER IN THE "ALL" TAB - EDIT HERE.
+   The "All" tab shows exactly these clips, left to right, top to bottom, in this order
+   (each entry is a `file` value from workItems above). It ignores hideFromAll and the
+   portrait/landscape check. Every other tab is unchanged and still lists its own clips.
+   To add a clip, add its `file` value; to remove one, delete its line.
+   If this list is left empty, "All" falls back to every portrait clip that is not hideFromAll. */
+const featuredWork = [
+  "shortform/video-4.mp4",           // man in blue t-shirt, "We've"
+  "ads/ad-9.mp4",                    // "Meet Higgsfield"
+  "shortform/video-2.mp4",           // "Investment portfolio isn't complete"
+  "ads/ad-4.mp4",                    // self-tan mitt, "No outfit"
+  "ai-content/mastermind-cohort-4.mp4", // "quote killed / 2 years lost"
+  "ads/ad-6.mp4",                    // woman in white coat
+  "shortform/video-3.mp4",           // five women at sunset
+  "ads/ad-1.mp4",                    // "$100 per day on ads"
+  "shortform/video-1.mp4",           // man in beige polo on a bench
+];
+const featuredRank = new Map(featuredWork.map((file, rank) => [file, rank]));
+featuredWork.forEach((file) => {
+  if (!workItems.some((item) => item.file === file)) console.warn("featuredWork: no workItems entry for", file);
+});
+
 const workGrid = document.getElementById("work-grid");
 let activeWorkFilter = "all";
 const workPosterLoaders = [];
+// Single rule for "does this card belong in the All tab".
+function shownInAll(card) {
+  if (featuredRank.size) return card.dataset.featured !== undefined;
+  return card.dataset.format !== "landscape" && card.dataset.hideFromAll !== "true";
+}
+// Cards are ordered with CSS `order` (the grid keeps DOM order otherwise): featured rank in the
+// All tab, the original workItems position in every other tab.
+function workCardOrder(card, filter) {
+  return filter === "all" && featuredRank.size && card.dataset.featured !== undefined
+    ? card.dataset.featured
+    : card.dataset.index;
+}
 function setWorkCardFormat(card, isLandscape) {
   card.dataset.format = isLandscape ? "landscape" : "reel";
   card.classList.toggle("landscape", isLandscape);
-  // Only touch visibility for the "all" view, and only in the direction
-  // of hiding landscape cards - never force-unhide, or this would undo
-  // the permanent hideFromAll flag on cards that happen to be portrait.
-  if (activeWorkFilter === "all" && isLandscape) card.classList.add("hidden");
+  // Only the "all" view is decided from the format; shownInAll() also covers the
+  // featured list and hideFromAll, so it is safe to both hide and unhide here.
+  if (activeWorkFilter === "all") card.classList.toggle("hidden", !shownInAll(card));
 }
-workItems.forEach((item) => {
+workItems.forEach((item, index) => {
   const src = `${PORTFOLIO_BASE}${item.file}`;
   // The grid only ever shows these at thumbnail size, so the on-hover
   // preview plays a small muted proxy (640px wide, no audio) instead of
@@ -255,14 +289,15 @@ workItems.forEach((item) => {
   const card = document.createElement("div");
   card.className = "work-card reveal";
   card.dataset.cat = item.cats.join(" ");
-  if (item.hideFromAll) {
-    card.dataset.hideFromAll = "true";
-    // Set synchronously at creation, not through applyWorkFilter (which
-    // only runs on a tab click) - otherwise these show up on the default
-    // "All" view for a moment before anything hides them. Clicking their
-    // actual category tab still reveals them normally.
-    card.classList.add("hidden");
-  }
+  card.dataset.index = index;
+  if (featuredRank.has(item.file)) card.dataset.featured = featuredRank.get(item.file);
+  if (item.hideFromAll) card.dataset.hideFromAll = "true";
+  // Set synchronously at creation, not through applyWorkFilter (which only runs on a
+  // tab click) - otherwise cards that do not belong in the default "All" view would show
+  // up for a moment before anything hides them, and the featured cards would flash in the
+  // wrong order. Clicking their actual category tab still reveals them normally.
+  if (!shownInAll(card)) card.classList.add("hidden");
+  card.style.order = workCardOrder(card, activeWorkFilter);
   // Nothing for this card is downloaded at page load: the poster still is fetched later by
   // loadWorkPosters() (below), and the preview clip only when the visitor first hovers the card.
   card.innerHTML = `
@@ -322,9 +357,10 @@ const filterTabs = document.querySelectorAll(".filter-tab");
 function applyWorkFilter(filter) {
   document.querySelectorAll(".work-card").forEach(card => {
     const matches = filter === "all"
-      ? card.dataset.format !== "landscape" && card.dataset.hideFromAll !== "true"
+      ? shownInAll(card)
       : card.dataset.cat.split(" ").includes(filter);
     card.classList.toggle("hidden", !matches);
+    card.style.order = workCardOrder(card, filter);
   });
 }
 
@@ -994,26 +1030,45 @@ const videoTestimonials = [
   { name: "Christian", file: "assets/testimonials/videos/christian-testimonial.mp4", poster: "assets/testimonials/posters/christian.jpg" },
   { name: "Cacau", file: "assets/testimonials/videos/cacau-testimonial.mp4", poster: "assets/testimonials/posters/cacau.jpg" },
   { name: "Joe", file: "assets/testimonials/videos/joe-testimonial.mp4", poster: "assets/testimonials/posters/joe.jpg" },
+  { name: "Client", file: "assets/testimonials/videos/guest-testimonial.mp4", poster: "assets/testimonials/posters/guest.jpg" },
 ];
 const proofVideoGrid = document.getElementById("proof-video-grid");
-// The portrait cards fade in together as one group. (The reveal class sits
-// on the grid, not on each card, so the cards' own hover "pop" transform is never
-// fighting the reveal transform, and a card scrolled in sideways on phones is
-// never stuck invisible.)
-proofVideoGrid.classList.add("reveal");
-videoTestimonials.forEach(t => {
+// Sliding row: #proof-video-grid is a full-width window, and one track inside it holds the
+// cards and drifts right-to-left forever (a CSS transform animation, see styles.css). The track
+// holds the real cards first, then aria-hidden clone sets, so it can loop by exactly one set's
+// width with no visible jump. The window fades in as one group (the reveal class sits on the
+// window, not on each card, so a card's own hover "pop" transform never fights the reveal one).
+const proofVideoTrack = document.createElement("div");
+proofVideoTrack.className = "proof-video-track";
+proofVideoGrid.appendChild(proofVideoTrack);
+proofVideoGrid.classList.add("reveal", "is-offscreen"); // paused until the row is on screen (below)
+proofVideoGrid.style.setProperty("--n", String(videoTestimonials.length)); // CSS: cycle time = cards x seconds per card
+let proofPostersReady = false;
+let proofCopies = 1; // sets of cards in the track: the real one plus its clones
+
+function createProofCard(t, isClone) {
   const card = document.createElement("div");
   card.className = "proof-video-card";
-  card.tabIndex = 0;
-  card.setAttribute("role", "button");
-  card.setAttribute("aria-label", `Play ${t.name}'s video testimonial`);
+  if (isClone) {
+    // Clones only make the loop seamless: hidden from screen readers and the tab order,
+    // but they play their preview and open the lightbox exactly like the real cards.
+    card.classList.add("is-clone");
+    card.setAttribute("aria-hidden", "true");
+    card.tabIndex = -1;
+  } else {
+    card.tabIndex = 0;
+    card.setAttribute("role", "button");
+    card.setAttribute("aria-label", `Play ${t.name}'s video testimonial`);
+  }
   card.innerHTML = `
     <video muted loop playsinline preload="none" data-src="${t.file}"></video>
     <span class="proof-play-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
     <span class="proof-video-name">${t.name}</span>
   `;
   const video = card.querySelector("video");
-  registerAutoplayVideo(video);
+  video.dataset.poster = t.poster;
+  if (proofPostersReady) video.poster = t.poster;
+  registerAutoplayVideo(video); // same lazy load + play-only-in-view rule for every card, clones included
   card.addEventListener("click", () => openLightbox(t.file));
   card.addEventListener("keydown", (e) => {
     if (e.target !== card) return;
@@ -1022,14 +1077,87 @@ videoTestimonials.forEach(t => {
       openLightbox(t.file);
     }
   });
-  proofVideoGrid.appendChild(card);
+  return card;
+}
+videoTestimonials.forEach((t) => proofVideoTrack.appendChild(createProofCard(t, false)));
+
+// Add clone sets until the row can never run out of cards on its right edge while it slides:
+// at least two sets in all, and every set but one together must be as wide as the window.
+// (The CSS slides by exactly one set: -100% / --copies.) Only ever adds sets, never removes.
+const proofMotion = window.matchMedia("(prefers-reduced-motion: no-preference)");
+function fitProofCopies() {
+  if (!proofMotion.matches) return; // reduced motion: a static row, the CSS hides any clones
+  const setWidth = proofVideoTrack.offsetWidth / proofCopies;
+  if (!setWidth) return;
+  const needed = Math.max(2, Math.ceil(proofVideoGrid.offsetWidth / setWidth) + 1);
+  while (proofCopies < needed) {
+    videoTestimonials.forEach((t) => proofVideoTrack.appendChild(createProofCard(t, true)));
+    proofCopies++;
+  }
+  proofVideoGrid.style.setProperty("--copies", String(proofCopies));
+}
+requestAnimationFrame(fitProofCopies); // after first layout, so it costs no extra layout pass
+let proofFitQueued = false;
+window.addEventListener("resize", () => {
+  if (proofFitQueued) return;
+  proofFitQueued = true;
+  requestAnimationFrame(() => { proofFitQueued = false; fitProofCopies(); });
 });
+proofMotion.addEventListener("change", fitProofCopies);
+
+// Pause rules (the CSS pauses the slide while any of these classes is set; hover and keyboard
+// focus are pure CSS): off-screen, tab in the background, and while a finger is on the row
+// (touch screens keep sliding on their own; touching holds it still, and it resumes 1.5s later).
+(function () {
+  if ("IntersectionObserver" in window) {
+    new IntersectionObserver((entries) => {
+      proofVideoGrid.classList.toggle("is-offscreen", !entries[entries.length - 1].isIntersecting);
+    }).observe(proofVideoGrid);
+  } else {
+    proofVideoGrid.classList.remove("is-offscreen");
+  }
+  const syncTabHidden = () => proofVideoGrid.classList.toggle("is-tab-hidden", document.hidden);
+  document.addEventListener("visibilitychange", syncTabHidden);
+  syncTabHidden();
+  let touchTimer = 0;
+  proofVideoGrid.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "mouse") return;
+    clearTimeout(touchTimer);
+    proofVideoGrid.classList.add("is-touching");
+  });
+  const touchEnd = (e) => {
+    if (e.pointerType === "mouse") return;
+    clearTimeout(touchTimer);
+    touchTimer = setTimeout(() => proofVideoGrid.classList.remove("is-touching"), 1500);
+  };
+  proofVideoGrid.addEventListener("pointerup", touchEnd);
+  proofVideoGrid.addEventListener("pointercancel", touchEnd);
+
+  // Keyboard: Tab moves through the real cards (the slide pauses on focus, see the CSS). If the
+  // card that gets focus has slid out of the window, jump the slide so it is on screen (in the
+  // middle where the first set's position allows it, otherwise as far left as the set can go).
+  proofVideoTrack.addEventListener("focusin", (e) => {
+    const card = e.target.closest(".proof-video-card");
+    if (!card || !card.matches(":focus-visible")) return;
+    const win = proofVideoGrid.getBoundingClientRect();
+    const box = card.getBoundingClientRect();
+    if (box.left >= win.left && box.right <= win.right) return;
+    const anim = proofVideoTrack.getAnimations()[0];
+    if (!anim) return;
+    const setWidth = proofVideoTrack.offsetWidth / proofCopies;
+    const x = [...proofVideoTrack.children].indexOf(card) * (setWidth / videoTestimonials.length);
+    const offset = Math.min(Math.max(x - (win.width - box.width) / 2, 0), setWidth);
+    anim.currentTime = (offset / setWidth) * anim.effect.getComputedTiming().duration;
+  });
+})();
+
 // Nothing here is downloaded at page load: the poster stills are fetched once the testimonials are
 // within ~1000px of the screen, and each preview clip when its card first scrolls into view
 // (attachLazySource in the shared autoplay observer above).
 (function () {
   const setPosters = () => {
-    proofVideoGrid.querySelectorAll("video").forEach((v, i) => { v.poster = videoTestimonials[i].poster; });
+    proofPostersReady = true;
+    proofVideoTrack.querySelectorAll("video").forEach((v) => { v.poster = v.dataset.poster; });
   };
   if (!("IntersectionObserver" in window)) { setPosters(); return; }
   const near = new IntersectionObserver((entries) => {

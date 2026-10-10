@@ -1182,25 +1182,57 @@ section[id], #top { scroll-margin-top: 6.875rem; }
 .proof { padding: 5rem 0; }
 .proof .section-inner > h2 { margin-bottom: var(--heading-gap); }
 
-/* Client video testimonials: six vertical (9:16) cards, as the originals were shot, always in
-   ONE line - never a second row. On desktop (above 900px) the six cards share one row of
-   equal columns. The row is wider than the narrow heading container: it is as wide as the
-   viewport allows up to 82rem (a 1.5rem gutter each side), centred under the left-aligned
-   heading by a symmetric margin, so each card stays about 12-13rem wide (about 23rem tall).
-   At 900px and below the same line becomes a swipeable snap-scroll strip (see the 900px and
-   560px blocks in the Responsive section).
-   The .reveal fade lives on the grid (added in script.js), not on the cards, so
-   the hover "pop" below is the only transform on a card. Nothing on desktop clips
-   the row, so the grown / lifted card and its shadow are never cut off. */
+/* Client video testimonials: vertical (9:16) cards, as the originals were shot, in ONE line that
+   slowly slides from right to left, forever. script.js puts a .proof-video-track inside the
+   grid; the track holds the cards plus clone sets (--copies sets in all, --n cards per set).
+   The grid is the window: full page width (it breaks out of the narrow heading container with
+   the 100vw / negative-margin trick; body hides any sideways overflow), faded out at both
+   ends with a mask so cards glide in and out. The heading above is untouched.
+   The slide moves by exactly one set (-100% / --copies) so the loop wraps invisibly. The time
+   for one set is --n x 6.5s, i.e. a constant ~6.5s per card (about 2rem per second, slow on
+   purpose) however many cards there are. The padding above and below the window gives a
+   hovered card (grown / lifted, with its shadow) room inside the clip; equal negative margins
+   cancel it, so the section's spacing is exactly what it was.
+   Pausing: pointer over the row, keyboard focus on a card, off-screen, background tab, or a
+   finger on the row (classes set in script.js). Reduced motion: no sliding, see the bottom of
+   this block. The .reveal fade lives on the grid, not on the cards, so the hover "pop" below
+   is the only transform on a card. */
 .proof-video-grid {
-  --proof-row-w: min(82rem, 100vw - 3rem);
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 1rem;
-  width: var(--proof-row-w);
-  margin-inline: calc((100% - var(--proof-row-w)) / 2);
+  --proof-card-w: 12.8rem;
+  --proof-gap: 1rem;
+  --slide-duration: calc(var(--n, 6) * 6.5s);
+  width: 100vw;
+  margin-inline: calc(50% - 50vw);
+  padding-block: 1.75rem 3rem;
+  margin-block: -1.75rem -3rem;
+  overflow: hidden;
+  overflow: clip; /* not scrollable, even by a focus jump: the track never gets nudged sideways */
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 6%, #000 94%, transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 6%, #000 94%, transparent 100%);
 }
+.proof-video-track {
+  display: flex;
+  width: max-content;
+  animation: proof-slide var(--slide-duration) linear infinite;
+  will-change: transform; /* on the track only, not on every card */
+}
+/* Every card carries its own right margin (not a flex gap), so the track is exactly
+   copies x one set wide, gap after the last card included, and the loop distance is exact. */
+@keyframes proof-slide {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(calc(-100% / var(--copies, 2)), 0, 0); }
+}
+@media (hover: hover) and (pointer: fine) {
+  .proof-video-grid:hover .proof-video-track { animation-play-state: paused; }
+}
+.proof-video-grid.is-offscreen .proof-video-track,
+.proof-video-grid.is-tab-hidden .proof-video-track,
+.proof-video-grid.is-touching .proof-video-track { animation-play-state: paused; }
+/* its own rule: a browser without :has() must not drop the three above with it */
+.proof-video-grid:has(.proof-video-card:focus-visible) .proof-video-track { animation-play-state: paused; }
 .proof-video-card {
+  flex: 0 0 var(--proof-card-w);
+  margin-right: var(--proof-gap);
   position: relative;
   aspect-ratio: 9/16;
   border-radius: 1rem;
@@ -1280,6 +1312,42 @@ section[id], #top { scroll-margin-top: 6.875rem; }
   .custom-production:hover, .custom-production:has(:focus-visible) { scale: none; }
   .proof-video-card { transition: border-color 0.3s ease; }
   .proof-video-card:hover, .proof-video-card:focus-visible { transform: none; box-shadow: none; }
+}
+
+/* Reduced motion: NO sliding. The row goes back to a static single line of the real cards (the
+   clones are hidden): on desktop, equal columns in the 82rem row under the heading; at 900px and
+   below, a swipeable snap-scroll strip that bleeds to the screen edges. */
+@media (prefers-reduced-motion: reduce) {
+  .proof-video-track { animation: none; will-change: auto; }
+  .proof-video-card.is-clone { display: none; }
+}
+@media (prefers-reduced-motion: reduce) and (min-width: 901px) {
+  .proof-video-grid {
+    --proof-row-w: min(82rem, 100vw - 3rem);
+    width: var(--proof-row-w);
+    margin-inline: calc((100% - var(--proof-row-w)) / 2);
+    padding-block: 0;
+    margin-block: 0;
+    overflow: visible;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  .proof-video-track { display: grid; grid-template-columns: repeat(var(--n, 6), minmax(0, 1fr)); gap: 1rem; width: auto; }
+  .proof-video-card { margin-right: 0; }
+}
+@media (prefers-reduced-motion: reduce) and (max-width: 900px) {
+  .proof-video-grid {
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 1.5rem;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding-inline: 1.5rem;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  .proof-video-grid::-webkit-scrollbar { display: none; }
+  .proof-video-card { scroll-snap-align: start; }
 }
 
 /* ---------- FAQ ---------- */
@@ -1739,32 +1807,15 @@ section[id], #top { scroll-margin-top: 6.875rem; }
   .services-list { width:100%; height:auto; display:grid; gap:0.75rem; perspective:none; }
   .service-row, .service-row.active, .service-row.previous, .service-row.next { position:relative; left:auto; top:auto; width:100%; height:auto; min-height:11.875rem; transform:none; opacity:1; filter:none; pointer-events:auto; }
   .services-dots, .services-note { display:none; }
-  /* tablet and phones: still ONE line - a swipeable strip of 11rem vertical cards that snap to
-     the left gutter, with the next ones peeking in. It bleeds out past the section's 1.5rem side
-     padding to the screen edges, and the padding gives a popped (grown/lifted) card room inside
-     the scroll clip. The negative margins cancel that padding (top and bottom), so the strip adds
-     no space of its own: the section's 5rem padding alone sets the gap above and below the cards.
-     The right padding lets the last card scroll right up to the gutter. */
-  .proof-video-grid {
-    display: flex;
-    gap: 1rem;
-    width: auto;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    scroll-padding-inline: 1.5rem;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-    padding: 1.25rem 1.5rem 3rem;
-    margin: -1.25rem -1.5rem -3rem;
-  }
-  .proof-video-grid::-webkit-scrollbar { display: none; }
-  .proof-video-card { flex: 0 0 11rem; scroll-snap-align: start; }
+  /* tablet and phones: the same sliding line, with smaller 11rem vertical cards (the swipeable
+     snap strip for reduced motion is in the testimonials section above) */
+  .proof-video-grid { --proof-card-w: 11rem; }
 }
 @media (max-width: 560px) {
   .stat-item { min-width: 8.25rem; padding: 1rem 0.75rem; }
   .work-grid { grid-template-columns: repeat(2, 1fr); }
-  /* phones: the same one-line strip (see the 900px block), with slightly bigger 12.5rem cards */
-  .proof-video-card { flex-basis: 12.5rem; }
+  /* phones: slightly bigger 12.5rem cards */
+  .proof-video-grid { --proof-card-w: 12.5rem; }
   .site-footer { padding: 3rem 0 0; }
   .footer-inner { gap: 2rem; padding-bottom: 3rem; }
   /* footer logo: a fixed 2.1rem height would be wider than a 340px screen, so size it by width (same aspect ratio) */
