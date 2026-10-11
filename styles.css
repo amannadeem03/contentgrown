@@ -824,18 +824,6 @@ section[id], #top { scroll-margin-top: 6.875rem; }
   position: relative;
   transform: translateY(10vh);
 }
-.hero-showcase-frame::before {
-  content: "";
-  position: absolute;
-  inset: -0.75rem;
-  border-radius: 1.375rem;
-  background: rgba(248, 98, 21, 0.65);
-  filter: blur(24px);
-  transform: translateZ(0);
-  will-change: transform;
-  backface-visibility: hidden;
-  pointer-events: none;
-}
 .hero-showcase .placeholder-frame {
   aspect-ratio: 16/9;
   position: relative;
