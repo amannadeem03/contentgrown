@@ -4,23 +4,71 @@ const heroVideos = Array.from(document.querySelectorAll(".hero-loop"));
 // Columns 3 and 4 are hidden on phones, so index.html only attaches their clips (data-src) on wider
 // screens. This also covers a phone being turned sideways later.
 const heroNarrowQuery = window.matchMedia("(max-width: 700px)");
-function attachHeroSources() {
-  if (heroNarrowQuery.matches) return;
-  heroVideos.forEach((v) => {
-    if (!v.getAttribute("src") && v.dataset.src) v.src = v.dataset.src;
-  });
-}
-attachHeroSources();
-if (heroNarrowQuery.addEventListener) heroNarrowQuery.addEventListener("change", attachHeroSources);
+// (attachHeroSources() itself is defined and first run at the end of this hero block, after the helpers it uses.)
 
 // The clips autoplay and loop on their own (muted + autoplay + loop in the markup; the files are cut so the
-// native wrap is a soft dissolve). Nothing below ever seeks them or restarts one that is playing: this only
-// starts a clip that is NOT playing - a browser that held autoplay back, or a clip returning into view.
-function kickHeroVideo(v) {
-  if (!v.getAttribute("src") || !v.paused) return;
-  if (v.dataset.offscreen === "1" || document.body.classList.contains("vsl-playing")) return;
-  v.play().catch(() => {});
+// native wrap is a soft dissolve). Nothing below ever seeks them, reloads them or touches one that is playing:
+// it only starts a clip that is NOT playing. That matters because browsers hold autoplay back or undo it in
+// several situations - Chrome pauses muted video "to save power" while the window is hidden or covered (for
+// example a just-opened browser window that is not on top yet) and then does not always start it again;
+// iPhones in Low Power Mode and some profiles/policies refuse autoplay until the first touch or click.
+// So a paused clip is started again at every moment that can matter (see the listeners and the watchdog below).
+const heroHasPlayed = new WeakSet();
+const heroRestartLog = new WeakMap(); // when a clip was recently restarted automatically
+const heroLastAuto = new WeakMap();   // the last such restart
+const heroFights = new WeakMap();     // how many of those restarts something undid again at once
+const heroBlocked = new WeakSet();    // clips whose last play() was refused by the autoplay policy
+
+// Browsers only treat a video as autoplay-eligible when it is muted; set it as a property too (some only
+// honour that), also for clips whose file is attached later. All no-ops on a clip that is already set up.
+function prepareHeroVideo(v) {
+  v.defaultMuted = true;
+  v.muted = true;
+  v.setAttribute("muted", "");
+  v.playsInline = true;
+  v.loop = true;
 }
+// While the page is hidden (minimised, covered, background tab) a play() would only be refused by the
+// browser (it aborts it "to save power") and would use up the clip's one automatic start: wait for it to show.
+// (anyway = the visitor has just clicked / pressed a key: the page is plainly in use, whatever it reports.)
+function heroCanPlayNow(v, anyway) {
+  return v.paused && !!v.getAttribute("src") && (anyway || !document.hidden) &&
+    v.dataset.offscreen !== "1" && !document.body.classList.contains("vsl-playing");
+}
+// A clip that something keeps stopping again (a "block autoplay" extension, a power-saver) is not fought
+// with: after 3 automatic restarts that were undone at once, or 5 within 10 s, it is left to the visitor's
+// next click / key press.
+function heroMayRestart(v) {
+  const now = Date.now();
+  const log = (heroRestartLog.get(v) || []).filter((t) => now - t < 10000);
+  heroRestartLog.set(v, log);
+  if (log.length >= 5) return false;
+  log.push(now);
+  return true;
+}
+function kickHeroVideo(v, automatic, anyway) {
+  if (!heroCanPlayNow(v, anyway)) return;
+  if (automatic) {
+    if ((heroFights.get(v) || 0) >= 3) return;
+    if (heroHasPlayed.has(v) && !heroMayRestart(v)) return;
+    heroLastAuto.set(v, Date.now());
+  }
+  const p = v.play();
+  if (p && p.catch) p.catch((err) => {
+    // Refused outright (autoplay policy: no user activation yet): no UI, the watchdog just slows down for this
+    // clip, and the next click / key press (onHeroGesture) starts it.
+    if (err && err.name === "NotAllowedError") heroBlocked.add(v);
+  });
+}
+function kickAllHeroVideos() {
+  heroVideos.forEach((v) => kickHeroVideo(v));
+}
+// Window too small to mean anything (hidden window opened at 0x0 / 1x1 before it is sized) or page hidden:
+// the observer's "not in view" answer is not trusted then, and is asked again when the page shows or resizes.
+function heroViewportUsable() {
+  return !document.hidden && window.innerWidth >= 100 && window.innerHeight >= 100;
+}
+let heroViewportWasUsable = heroViewportUsable();
 // A clip is paused only once it is completely out of view with a wide margin (300px), and resumed when it
 // comes back - small scroll movements near the edge of the screen never toggle it.
 const heroVideoObserver = new IntersectionObserver((entries) => {
@@ -29,23 +77,121 @@ const heroVideoObserver = new IntersectionObserver((entries) => {
     if (entry.isIntersecting) {
       delete v.dataset.offscreen;
       kickHeroVideo(v);
-    } else {
+    } else if (heroViewportUsable()) {
       v.dataset.offscreen = "1";
       if (!v.paused) v.pause();
     }
   });
 }, { rootMargin: "300px 0px", threshold: 0 });
+function reobserveHeroVideos() {
+  heroVideos.forEach((v) => { heroVideoObserver.unobserve(v); heroVideoObserver.observe(v); });
+}
+function heroAllPlaying() {
+  return heroVideos.every((v) => !v.getAttribute("src") || (heroHasPlayed.has(v) && !v.paused));
+}
+
+// First-input fallback for browsers that hold autoplay back (even muted) until the visitor does something:
+// the first click / key / touch / scroll / mouse move starts any clip that is paused. Stays registered until
+// every clip is confirmed playing, then removes itself (and comes back if a clip is found stopped again).
+const heroGestureEvents = ["pointerdown", "mousedown", "click", "touchstart", "keydown", "mousemove", "wheel", "scroll"];
+let heroGesturesArmed = false;
+let heroGestureLast = 0;
+function onHeroGesture(e) {
+  if (e.type === "mousemove" || e.type === "wheel" || e.type === "scroll") { // harmless, fires a lot
+    const n = performance.now();
+    if (n - heroGestureLast < 200) return;
+    heroGestureLast = n;
+  }
+  const activation = e.type === "pointerdown" || e.type === "mousedown" || e.type === "click" || e.type === "touchstart" || e.type === "keydown";
+  heroVideos.forEach((v) => {
+    if (activation) { heroFights.delete(v); heroRestartLog.delete(v); heroBlocked.delete(v); } // a real click / key press: start afresh
+    kickHeroVideo(v, false, true);
+  });
+  if (heroAllPlaying()) disarmHeroGestures();
+}
+function armHeroGestures() {
+  if (heroGesturesArmed) return;
+  heroGesturesArmed = true;
+  heroGestureEvents.forEach((name) => window.addEventListener(name, onHeroGesture, { passive: true, capture: true }));
+}
+function disarmHeroGestures() {
+  if (!heroGesturesArmed) return;
+  heroGesturesArmed = false;
+  heroGestureEvents.forEach((name) => window.removeEventListener(name, onHeroGesture, { capture: true }));
+}
+
 heroVideos.forEach((v) => {
-  v.loop = true;
-  // One more try the moment there is something to play, only matters if autoplay was held back.
-  v.addEventListener("loadeddata", () => kickHeroVideo(v), { once: true });
+  prepareHeroVideo(v);
+  // Try again the moment there is something to play, at every stage of loading.
+  ["loadedmetadata", "loadeddata", "canplay", "canplaythrough"].forEach((type) => {
+    v.addEventListener(type, () => kickHeroVideo(v));
+  });
+  v.addEventListener("playing", () => {
+    heroHasPlayed.add(v);
+    heroBlocked.delete(v);
+    if (heroAllPlaying()) disarmHeroGestures();
+  });
+  // Stopped by someone else while the hero is on screen and the page is showing (not our own off-screen / VSL
+  // rest, not the browser's rest while the page is hidden): start it again.
+  v.addEventListener("pause", () => {
+    if (!v.getAttribute("src") || document.hidden || v.dataset.offscreen === "1" || document.body.classList.contains("vsl-playing")) return;
+    if (Date.now() - (heroLastAuto.get(v) || 0) < 1500) heroFights.set(v, (heroFights.get(v) || 0) + 1); // undone right after our restart
+    armHeroGestures();
+    setTimeout(() => kickHeroVideo(v, true), 50);
+  });
   heroVideoObserver.observe(v);
 });
-// Some browsers (e.g. iPhones in Low Power Mode) refuse to autoplay even muted video until the visitor
-// touches the page: give the clips one more try on the first touch, click, key press or scroll.
-["pointerdown", "touchstart", "keydown", "wheel", "scroll"].forEach((name) => {
-  window.addEventListener(name, () => heroVideos.forEach(kickHeroVideo), { once: true, passive: true });
+
+// Every moment that can matter, not only once: the document is parsed / fully loaded, the page is restored
+// from the back-forward cache, the window or tab is shown or focused, the window is resized.
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", kickAllHeroVideos, { once: true });
+window.addEventListener("load", kickAllHeroVideos);
+window.addEventListener("pageshow", kickAllHeroVideos);
+window.addEventListener("focus", kickAllHeroVideos);
+document.addEventListener("visibilitychange", () => {
+  heroViewportWasUsable = heroViewportUsable();
+  if (document.hidden) return;
+  reobserveHeroVideos(); // fresh in/out-of-view answer for every clip (also kicks the ones in view)
+  kickAllHeroVideos();
 });
+window.addEventListener("resize", () => {
+  const usable = heroViewportUsable();
+  if (usable && !heroViewportWasUsable) { reobserveHeroVideos(); kickAllHeroVideos(); }
+  heroViewportWasUsable = usable;
+});
+
+// Watchdog: every 400 ms for the first 8 s, then every 2 s, any clip that is paused and not deliberately
+// resting (off screen, VSL playing, page hidden) is started. Cheap: four property reads per tick.
+let heroWatchTick = 0;
+(function heroWatchdog() {
+  heroWatchTick++;
+  let stuck = false;
+  heroVideos.forEach((v) => {
+    if (!heroCanPlayNow(v)) return;
+    stuck = true;
+    // A clip the autoplay policy refused is only retried every 5th tick; it is the visitor's click that starts it.
+    if (!heroBlocked.has(v) || heroWatchTick % 5 === 0) kickHeroVideo(v, true);
+  });
+  if (stuck) armHeroGestures();
+  setTimeout(heroWatchdog, performance.now() < 8000 ? 400 : 2000);
+})();
+
+function attachHeroSources() {
+  if (heroNarrowQuery.matches) return;
+  heroVideos.forEach((v) => {
+    if (!v.getAttribute("src") && v.dataset.src) {
+      v.src = v.dataset.src;
+      prepareHeroVideo(v);
+      kickHeroVideo(v);
+    }
+  });
+  armHeroGestures();
+}
+attachHeroSources();
+if (heroNarrowQuery.addEventListener) heroNarrowQuery.addEventListener("change", attachHeroSources);
+armHeroGestures();
+// At once, without waiting for the observer's first answer.
+kickAllHeroVideos();
 
 /* ---------- Site background video: crossfaded loop, always smooth ---------- */
 (function () {

@@ -7,7 +7,7 @@
 <!-- Hero clips 3 and 4 are hidden on phones (max-width 700px), so they carry data-src and get their file the moment the
      parser creates them on wider screens. Runs before the stylesheets so it never waits for them; script.js repeats the
      same step as a safety net. -->
-<script>(function(){if(!window.MutationObserver||window.matchMedia("(max-width: 700px)").matches)return;var m=new MutationObserver(function(){var v=document.querySelectorAll(".hero-loop[data-src]");for(var i=0;i<v.length;i++)if(!v[i].getAttribute("src"))v[i].src=v[i].getAttribute("data-src");});m.observe(document,{childList:true,subtree:true});document.addEventListener("DOMContentLoaded",function(){m.disconnect();});})();</script>
+<script>(function(){if(!window.MutationObserver||window.matchMedia("(max-width: 700px)").matches)return;var m=new MutationObserver(function(){var v=document.querySelectorAll(".hero-loop[data-src]");for(var i=0;i<v.length;i++)if(!v[i].getAttribute("src")){v[i].defaultMuted=true;v[i].muted=true;v[i].src=v[i].getAttribute("data-src");}});m.observe(document,{childList:true,subtree:true});document.addEventListener("DOMContentLoaded",function(){m.disconnect();});})();</script>
 <link rel="icon" href="assets/favicon.ico" sizes="32x32">
 <link rel="icon" type="image/png" href="assets/favicon-16x16.png" sizes="16x16">
 <link rel="icon" type="image/png" href="assets/favicon-32x32.png" sizes="32x32">
