@@ -157,6 +157,15 @@ section[id], #top { scroll-margin-top: 6.875rem; }
   gap: 1.25rem;
 }
 
+/* Desktop: logo | nav | button as three columns where the two outer columns are equal, so the nav bar sits
+   exactly on the page centre (with flex space-between its position drifted with the logo/button widths). */
+@media (min-width: 901px) {
+  .header-row { display: grid; grid-template-columns: 1fr auto 1fr; }
+  .header-row .logo { justify-self: start; }
+  .header-row .nav { justify-self: center; }
+  .header-row .nav-cta { justify-self: end; }
+}
+
 .nav {
   position: relative;
   display: inline-flex;
