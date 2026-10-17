@@ -989,7 +989,7 @@ function renderPricing(tier) {
       <p class="pricing-includes-title">Includes <span class="pricing-includes-tier">(${label})</span></p>
       <ul class="pricing-features">${features.map(pricingFeatureHtml).join("")}</ul>
       <div class="pricing-actions">
-        <a class="btn ${plan.badge ? "btn-solid btn-glass" : "btn-glass"}" href="#book" data-tier="${tier}" data-plan="${plan.name}" aria-haspopup="dialog">Get Started</a>
+        <a class="btn ${plan.badge ? "btn-solid btn-glass" : "btn-glass"}" href="#book" data-tier="${tier}" data-plan="${plan.name}" aria-haspopup="dialog">Get Started${plan.badge ? `<span class="btn-beam" aria-hidden="true"></span>` : ""}</a>
       </div>
     </article>`).join("");
   pricingGrid.dataset.tier = tier;
