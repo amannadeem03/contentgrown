@@ -1964,7 +1964,8 @@ section[id], #top { scroll-margin-top: 6.875rem; }
 @media (max-width: 900px) {
   /* MOBILE: What We Do */
   /* the pin: a tall track with a one-screen sticky stage inside it (svh = the screen with the browser bars showing, so it never grows or jumps while scrolling) */
-  .services { height: 340vh; height: 340svh; padding: 0; overflow-x: clip; }
+  /* 440svh = one screen of stage + three card-to-card stretches of ~113svh each, so a normal swipe moves about one card (it was 340svh: a flick covered 2-3 cards) */
+  .services { height: 440vh; height: 440svh; padding: 0; overflow-x: clip; }
   .services > .section-inner { position: sticky; top: 0; height: 100vh; height: 100svh; min-height: 0; padding: 5.5rem 0 1.25rem; justify-content: center; }
   .services-heading { align-items: flex-start; gap: 1rem; margin-bottom: 1.25rem; padding-inline: var(--gutter); }
   .services-heading .section-sub { margin: 0.5rem 0 0; font-size: 0.95rem; line-height: 1.5; }
@@ -1977,6 +1978,9 @@ section[id], #top { scroll-margin-top: 6.875rem; }
   .services .service-row.active { opacity: 1; transform: none; z-index: 3; }
   .services .service-row.previous { opacity: .24; transform: translate3d(calc(-93% - 13px), 0, -210px) rotateY(20deg) scale(.77); z-index: 1; }
   .services .service-row.next { opacity: .24; transform: translate3d(calc(93% + 13px), 0, -190px) rotateY(-20deg) scale(.77); z-index: 1; }
+  /* gliding: script.js ("MOBILE: What We Do") puts every card at its own point between those poses, every frame, through these three
+     custom properties (so the poses above are only the fallback and the resting look); no CSS transition on top of it */
+  .services .services-list.is-glide .service-row { transform: var(--svc-t); opacity: var(--svc-o); z-index: var(--svc-i); transition: none; }
   .service-index { top: 1.375rem; left: var(--svc-pad); font-size: 0.7rem; }
   .service-tag { top: 1.375rem; left: calc(var(--svc-pad) + 2.2rem); font-size: 0.64rem; letter-spacing: 0.16em; white-space: nowrap; }
   /* titles wrap inside the card (the desktop one-line rules are switched off here) */

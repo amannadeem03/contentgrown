@@ -623,56 +623,186 @@ services.forEach((s, i) => {
 })();
 
 /* MOBILE: What We Do - the same pinned scroll carousel on tablets and phones (900px and below).
-   The desktop code above stops at 900px; this one takes over there and sets the very same classes
-   (.active / .previous / .next, the glass card, dots and counter) with the same stages and dead zone,
-   so the look and the animation come from the one set of CSS rules. The stage is the section's sticky
-   one-screen box, so its scroll distance is the section's height minus that box's height. */
+   The desktop code above stops at 900px; this one takes over there. The stage is the section's sticky
+   one-screen box, so how far the visitor is through the pin is  -section.top / (section height - stage height)
+   (0 to 1). That is NOT put on the cards directly: one flick of the thumb can cover most of the pin in a few
+   frames, and cards that follow the raw scroll then jump several at once and have no time to move.
+   Instead:
+   - "goal" = where the scroll says the cards are (each card holds for a stretch of scroll, then the next turns
+     in), "shown" = the position actually drawn. Shown chases the goal with a critically damped spring and is
+     only ever aimed ONE card ahead, so a flick plays as a quick cascade, every card in order (about half a
+     second each), while a slow drag simply follows the finger;
+   - cards are drawn at fractional positions: each pose (side shift, depth, turn, scale, opacity) is blended
+     between the same poses the CSS gives .previous / .active / .next, so the frames in between are smooth and
+     the resting frames are exactly the desktop look;
+   - when scrolling stops between two cards, shown eases to the nearer one;
+   - prefers-reduced-motion: the cards still follow the scroll but swap instantly (no spring, no blending).
+   The pose goes out as custom properties (--svc-t / --svc-o / --svc-i, used by .is-glide in styles.css), because
+   the desktop code above clears inline transform / opacity / z-index on every scroll event below 900px. */
 (function () {
   const section = document.getElementById("services");
   const cards = Array.from(document.querySelectorAll(".service-row"));
   const dots = Array.from(document.querySelectorAll(".services-dot"));
   const counter = document.getElementById("service-current");
   const stage = section && section.querySelector(".section-inner");
-  if (!stage || !cards.length || !counter) return;
+  const list = document.getElementById("services-list");
+  if (!stage || !list || !cards.length || !counter) return;
 
   const n = cards.length;
   const mobile = window.matchMedia("(max-width: 900px)");
-  const DEAD_ZONE = .035;
-  let activeIndex = 0;
-  let raf = null;
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const HOLD = .2;        // each card holds for this share of the scroll between two cards (at both ends of it)
+  const OMEGA = 9;        // spring speed (rad/s): about half a second per card in a cascade
+  const LEAD = .06;       // shown may be aimed at the card after the next one once it is this close to the next
+  const SETTLE_MS = 140;  // scrolling stopped this long (no finger down): ease to the nearer card
+  const DEAD_ZONE = .06;  // how far past the half-way point (in cards) before the front card swaps
+  // The pose of a card d places from the front one, d = -2 ... +2: [side shift in card widths, side shift in px,
+  // depth px, turn deg, scale, opacity] - the CSS poses of .previous (-1), .active (0) and .next (+1), and the hidden one.
+  const POSES = [
+    [0, 0, -460, -58, .72, 0],
+    [-.93, -13, -210, 20, .77, .24],
+    [0, 0, 0, 0, 1, 1],
+    [.93, 13, -190, -20, .77, .24],
+    [0, 0, -460, -58, .72, 0],
+  ];
 
-  function render(index) {
+  let shown = 0, vel = 0;               // the drawn position (in cards, 0 ... n-1) and its speed
+  let shownIdx = -1, paintedShown = NaN, paintedW = 0;
+  let cardW = 0, rmIdx = 0, last = 0, lastScroll = -1e9, lastVW = window.innerWidth;
+  let engaged = false, snap = true, touching = false, raf = 0;
+  const clamp01 = v => Math.max(0, Math.min(1, v));
+
+  // scroll position (0 ... n-1 cards) -> goal: every card holds, then the next one turns in (ease in and out)
+  function goalFor(raw) {
+    const k = Math.min(Math.floor(raw), n - 2);
+    const t = clamp01((raw - k - HOLD) / (1 - 2 * HOLD));
+    return k + t * t * (3 - 2 * t);
+  }
+
+  // Exact step of a critically damped spring (same maths as the stat bar's glide), so it is smooth at any frame rate.
+  function spring(offset, v, dt) {
+    if (offset * (v + OMEGA * offset) < 0) v = -OMEGA * offset; // never carry past the aim
+    const b = v + OMEGA * offset;
+    const decay = Math.exp(-OMEGA * dt);
+    return [(offset + b * dt) * decay, (b - OMEGA * (offset + b * dt)) * decay];
+  }
+
+  function paint() {
+    if (shown !== paintedShown || cardW !== paintedW) {
+      paintedShown = shown;
+      paintedW = cardW;
+      cards.forEach((card, i) => {
+        const d = Math.max(-2, Math.min(2, i - shown)) + 2;
+        const k = Math.min(Math.floor(d), 3), f = d - k;
+        const a = POSES[k], b = POSES[k + 1];
+        const v = j => a[j] + (b[j] - a[j]) * f;
+        card.style.setProperty("--svc-t", `translate3d(${(v(0) * cardW + v(1)).toFixed(2)}px, 0, ${v(2).toFixed(1)}px) rotateY(${v(3).toFixed(2)}deg) scale(${v(4).toFixed(4)})`);
+        card.style.setProperty("--svc-o", v(5).toFixed(3));
+        card.style.setProperty("--svc-i", String(Math.round(30 - Math.abs(i - shown) * 10)));
+      });
+    }
+    // the front card (the class poses, glass, dots and counter follow it); a small dead zone past the half-way point
+    // so a position resting there cannot flip it back and forth
+    const idx = shownIdx >= 0 && Math.abs(shown - shownIdx) <= .5 + DEAD_ZONE ? shownIdx : Math.round(shown);
+    if (idx === shownIdx) return;
+    shownIdx = idx;
     cards.forEach((card, i) => {
-      card.classList.toggle("active", i === index);
-      card.classList.toggle("previous", i === index - 1);
-      card.classList.toggle("next", i === index + 1);
-      card.classList.toggle("service-row--glass", i === index);
+      card.classList.toggle("active", i === idx);
+      card.classList.toggle("previous", i === idx - 1);
+      card.classList.toggle("next", i === idx + 1);
+      card.classList.toggle("service-row--glass", i === idx);
     });
-    dots.forEach((dot, i) => dot.classList.toggle("active", i === index));
-    counter.textContent = String(index + 1).padStart(2, "0");
+    dots.forEach((dot, i) => dot.classList.toggle("active", i === idx));
+    counter.textContent = String(idx + 1).padStart(2, "0");
   }
 
-  function update() {
-    raf = null;
-    if (!mobile.matches) return; // on desktop the code above does this
-    const distance = section.offsetHeight - stage.offsetHeight;
-    const progress = distance > 0 ? Math.max(0, Math.min(1, -section.getBoundingClientRect().top / distance)) : 0;
-    while (activeIndex < n - 1 && progress >= ((activeIndex + 1) / n) + DEAD_ZONE) activeIndex++;
-    while (activeIndex > 0 && progress < (activeIndex / n) - DEAD_ZONE) activeIndex--;
-    render(activeIndex);
+  // back to the desktop: drop the gliding poses (the desktop code above takes over)
+  function release() {
+    if (!engaged) return;
+    engaged = false;
+    shownIdx = -1;
+    paintedShown = NaN;
+    vel = 0;
+    last = 0;
+    list.classList.remove("is-glide");
+    cards.forEach(card => ["--svc-t", "--svc-o", "--svc-i"].forEach(p => card.style.removeProperty(p)));
   }
 
-  function requestUpdate() {
-    if (raf) return;
-    raf = requestAnimationFrame(update);
+  function frame(now) {
+    raf = 0;
+    if (!mobile.matches) { release(); return; }
+    const rect = section.getBoundingClientRect();
+    const dist = section.offsetHeight - stage.offsetHeight;
+    const raw = (dist > 0 ? clamp01(-rect.top / dist) : 0) * (n - 1);
+    const onScreen = rect.bottom > 0 && rect.top < window.innerHeight;
+    cardW = cards[0].offsetWidth;
+    const settled = (!touching || now - lastScroll > 1200) && now - lastScroll > SETTLE_MS;
+    let goal = goalFor(raw);
+    if (settled) goal = Math.round(goal);
+    let target = goal;
+    if (reduced.matches) {
+      // no glide: the front card swaps instantly (with a small dead zone so a resting position cannot flip back and forth)
+      if (snap) rmIdx = Math.round(goalFor(raw));
+      while (rmIdx < n - 1 && raw >= rmIdx + .5 + DEAD_ZONE) rmIdx++;
+      while (rmIdx > 0 && raw < rmIdx - .5 - DEAD_ZONE) rmIdx--;
+      shown = target = rmIdx;
+      vel = 0;
+    } else if (snap || !onScreen) {
+      shown = goal; // first frame, a resize, or the section is off screen: nothing to animate
+      vel = 0;
+    } else {
+      // aim at most ONE card ahead of the one shown, so the cards in between always get their turn
+      let aim = goal;
+      if (goal > shown) aim = Math.min(goal, Math.floor(shown + LEAD) + 1);
+      else if (goal < shown) aim = Math.max(goal, Math.ceil(shown - LEAD) - 1);
+      const dt = last ? Math.min(.1, (now - last) / 1000) : 1 / 60;
+      const [offset, v] = spring(shown - aim, vel, dt);
+      shown = aim + offset;
+      vel = v;
+      if (Math.abs(shown - goal) < .002 && Math.abs(vel) < .02) { shown = goal; vel = 0; }
+    }
+    snap = false;
+    paint();
+    if (!engaged) { engaged = true; list.classList.add("is-glide"); } // after the first paint, so the cards never show un-posed
+    if (shown !== target || vel !== 0 || now - lastScroll < SETTLE_MS + 60) {
+      last = now;
+      raf = requestAnimationFrame(frame);
+    } else {
+      last = 0;
+    }
   }
 
-  window.addEventListener("scroll", requestUpdate, { passive: true });
-  window.addEventListener("resize", requestUpdate);
-  window.addEventListener("orientationchange", requestUpdate);
-  if (mobile.addEventListener) mobile.addEventListener("change", requestUpdate);
-  else if (mobile.addListener) mobile.addListener(requestUpdate);
-  update();
+  function request() {
+    if (!raf) raf = requestAnimationFrame(frame);
+  }
+  function onScroll() {
+    lastScroll = performance.now();
+    if (mobile.matches) request();
+  }
+  function onTouchEnd() {
+    touching = false;
+    lastScroll = performance.now();
+    if (mobile.matches) request();
+  }
+  function onResize() {
+    // only a change of WIDTH (rotation, real resize) re-seats the cards at once; the browser bars sliding away
+    // while scrolling also resize the window, and that must not make the cards jump
+    if (window.innerWidth !== lastVW) { lastVW = window.innerWidth; snap = true; }
+    request();
+  }
+  function onMode() { snap = true; request(); }
+
+  window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("touchstart", () => { touching = true; }, { passive: true });
+  window.addEventListener("touchend", onTouchEnd, { passive: true });
+  window.addEventListener("touchcancel", onTouchEnd, { passive: true });
+  window.addEventListener("resize", onResize);
+  window.addEventListener("orientationchange", onResize);
+  [mobile, reduced].forEach(mq => {
+    if (mq.addEventListener) mq.addEventListener("change", onMode);
+    else if (mq.addListener) mq.addListener(onMode);
+  });
+  frame(performance.now());
 })();
 
 yield;
@@ -683,8 +813,8 @@ const serviceLabels = services.map(s => s.title.replace(/<br\s*\/?>/g, " "));
 // Scroll to What We Do and land on the chosen card. On desktop the section is a tall pinned track in
 // which each card is the active one around scroll progress (i + 0.5) / n, so aim for the middle of
 // that stretch rather than a boundary. Tablets and phones (900px and below) pin the section the same way
-// (see "MOBILE: What We Do" above), so there the same middle-of-the-stretch is measured against the
-// section's own one-screen sticky box.
+// (see "MOBILE: What We Do" above), measured against the section's own one-screen sticky box; there the
+// cards hold at i / (cards - 1) of the pin instead (the glide logic above).
 function scrollToService(index) {
   const section = document.getElementById("services");
   let top;
@@ -692,8 +822,11 @@ function scrollToService(index) {
     const distance = section.offsetHeight - window.innerHeight;
     top = section.offsetTop + ((index + 0.5) / services.length) * distance;
   } else {
+    // MOBILE: What We Do - card i holds at pin progress i / (cards - 1) (first card at the start, last at the end);
+    // aim a little inside both ends so the pinned screen is certainly on show
     const distance = section.offsetHeight - section.querySelector(".section-inner").offsetHeight;
-    top = section.getBoundingClientRect().top + window.scrollY + ((index + 0.5) / services.length) * distance;
+    const progress = Math.min(0.97, Math.max(0.03, index / (services.length - 1)));
+    top = section.getBoundingClientRect().top + window.scrollY + progress * distance;
   }
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   window.scrollTo({ top, behavior: reduceMotion ? "instant" : "smooth" });
