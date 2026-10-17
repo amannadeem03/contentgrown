@@ -1846,3 +1846,51 @@ section[id], #top { scroll-margin-top: 6.875rem; }
   .proof-play-icon { transition: background 0.3s ease; }
   .proof-video-card:hover .proof-play-icon, .proof-video-card:focus-visible .proof-play-icon { transform: translate(-50%, -50%); }
 }
+
+/* MOBILE: how it works + audit
+   Phones and tablets only (<= 900px): nothing in this block applies above 900px, so the desktop layout is untouched.
+   It sits at the very end of the file so that it wins over the equal-strength rules above it. */
+@media (max-width: 900px) {
+  /* How It Works. One column. The four steps are four identical boxes (grid-auto-rows:1fr makes every row as tall as
+     the tallest step) and the number + text sit on the same two-column grid in each. The highlight is drawn on the
+     active step itself (the floating highlight box is not used here), so it can never be wider than the step, shift
+     sideways or lag behind a reflow: it stays inside the page gutter at every width. */
+  .how { padding: 5rem 0; }
+  .how-grid { grid-template-columns: minmax(0, 1fr); gap: 2rem; align-items: start; }
+  .how-steps { margin-top: 0; display: grid; grid-auto-rows: 1fr; gap: 0.75rem; }
+  .how-step-bubble { display: none; }
+  .how-step { display: grid; grid-template-columns: 1.75rem minmax(0, 1fr); column-gap: 0.75rem; align-items: baseline; padding: 1rem 1.125rem; border: 1px solid rgba(255, 255, 255, 0.09); border-radius: 1rem; background: rgba(255, 255, 255, 0.025); transition: opacity 0.9s var(--ease), transform 0.9s var(--ease), border-color 0.3s var(--ease-soft), background-color 0.3s var(--ease-soft), box-shadow 0.3s var(--ease-soft); }
+  .how-step-num { width: auto; }
+  .how-step h3, .how-step p { overflow-wrap: break-word; }
+  .how-step.active { border-color: rgba(248, 98, 21, 0.46); background: radial-gradient(120% 170% at 8% 0%, rgba(255, 183, 138, 0.22), transparent 48%), linear-gradient(105deg, rgba(248, 98, 21, 0.16), rgba(248, 98, 21, 0.055) 58%, rgba(255, 255, 255, 0.018)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 8px 22px -10px rgba(248, 98, 21, 0.3); }
+  /* the preview card: no desktop-style downward offset (it only pushed the card into the bottom padding), a header
+     that never breaks "01 / 04" onto two lines, and a progress bar that follows the card's padding */
+  .how-preview.reveal { transform: translateY(22px); }
+  .how-preview.reveal.in-view { transform: none; }
+  .how-preview { padding: 1.5rem; }
+  .how-preview-head { flex-wrap: wrap; gap: 0.25rem 0.75rem; letter-spacing: 0.12em; }
+  .how-preview-head span { white-space: nowrap; }
+  .how-preview-progress { left: 1.5rem; right: 1.5rem; }
+
+  /* Hamburger menu: the "Book a Call" button had lost its side padding (the menu's link rule beat the button's own),
+     so its text touched the border. Give it the normal button padding back. */
+  .mobile-menu .btn { padding: 0.8125rem 1.875rem; }
+
+  /* Editing packages: on a tablet the three cards were a narrower, centred column (590px) while the toggle above and the
+     custom-production box below use the full content width. Same width for all of them. */
+  .pricing-grid { max-width: none; margin: 0; }
+
+  /* Get Started dialog: the three choices (WhatsApp / Book a call / Payment link) are three different heights on a phone
+     because their one-line texts wrap differently. Same height for all three. */
+  .choose-options { grid-auto-rows: 1fr; }
+}
+@media (max-width: 900px) and (prefers-reduced-motion: reduce) {
+  .how-step { transition: opacity 0.4s ease, border-color 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease; }
+  .how-preview.reveal { transform: none; }
+}
+@media (max-width: 560px) {
+  /* Standard / Advanced toggle: as wide as the cards under it, two equal halves. It used to be a fixed 318px strip that
+     was cut off (a hidden sideways scroll) on screens narrower than about 370px. */
+  .pricing-toggle { display: flex; width: 100%; }
+  .pricing-toggle-option { flex: 1 1 0; min-width: 0; padding-inline: 0.5rem; white-space: nowrap; }
+}
