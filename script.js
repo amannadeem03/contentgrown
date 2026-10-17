@@ -1296,7 +1296,11 @@ yield;
   const items = Array.from(bar.querySelectorAll(".stat-item"));
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const clamp = v => Math.max(0, Math.min(1, v));
-  const isDesktop = () => window.innerWidth > 900;
+  // MOBILE: stat bar - same breakpoint as the "MOBILE: stat bar" block in styles.css.
+  const mobileMQ = window.matchMedia("(max-width: 900px)");
+  const isDesktop = () => !mobileMQ.matches;
+  // Phones stack the four stats (the bubble then slides up/down); tablets and desktop keep them in a row.
+  const isStacked = () => !isDesktop() && items.length > 1 && items[1].offsetTop > items[0].offsetTop + 1;
 
   let activeIndex = 0;
   function setActive(index) {
@@ -1308,6 +1312,22 @@ yield;
   function syncBubbleWidth() {
     const w = items[0]?.getBoundingClientRect().width || 0;
     bar.style.setProperty("--bubble-w", `${w}px`);
+  }
+
+  // MOBILE: stat bar - the bubble's position runs along one axis: left->right in a row (--bubble-x, as on
+  // desktop) or top->bottom when the stats are stacked (--bubble-y). These helpers pick the right one.
+  function itemPos(index) {
+    const item = items[index];
+    if (!item) return 0;
+    return (isStacked() ? item.offsetTop : item.offsetLeft) || 0;
+  }
+  function setBubblePos(px) {
+    bar.style.setProperty(isStacked() ? "--bubble-y" : "--bubble-x", `${px}px`);
+  }
+  function syncStackedBubbleSize() {
+    // stacked rows are all equally tall, so the bubble is as tall as the first one
+    if (isStacked()) bar.style.setProperty("--bubble-h", `${items[0].getBoundingClientRect().height}px`);
+    else bar.style.removeProperty("--bubble-h");
   }
 
   if (reducedMotion) {
@@ -1350,14 +1370,14 @@ yield;
     if (lastTime === null) lastTime = now;
     const dt = Math.max(0, (now - lastTime) / 1000);
     lastTime = now;
-    const target = items[activeIndex]?.offsetLeft || 0;
+    const target = itemPos(activeIndex);
     const [offset, vel] = criticalSpringStep(bubbleX - target, bubbleVel, OMEGA, dt);
     bubbleX = target + offset;
     bubbleVel = vel;
     const dx = target - bubbleX;
 
     const stretch = clamp(1 + Math.min(Math.abs(bubbleVel) * 0.00028, 0.2));
-    bar.style.setProperty("--bubble-x", `${bubbleX}px`);
+    setBubblePos(bubbleX);
     bar.style.setProperty("--bubble-stretch", stretch.toFixed(3));
 
     if (Math.abs(dx) > 0.05 || Math.abs(bubbleVel) > 0.5) {
@@ -1365,7 +1385,7 @@ yield;
     } else {
       bubbleX = target;
       bubbleVel = 0;
-      bar.style.setProperty("--bubble-x", `${bubbleX}px`);
+      setBubblePos(bubbleX);
       bar.style.setProperty("--bubble-stretch", "1");
       springRaf = null;
       lastTime = null;
@@ -1380,12 +1400,12 @@ yield;
   // interception, no preventDefault, so scrolling stays completely native
   // and reverses correctly on its own).
   //
-  // Mobile/tablet has no pin - the bar itself is short and scrolls
-  // *horizontally* instead (see the max-width:900px rules), so driving
-  // the bubble off vertical page-scroll would make it jump straight to
-  // the last item the moment the bar reaches a normal reading position.
-  // Tying it to the bar's own horizontal scrollLeft instead makes the
-  // bubble follow whichever item the visitor has actually swiped to.
+  // Mobile/tablet (<= 900px): the heading above the bar is too tall to pin on a
+  // phone, so only the bar is pinned (CSS: position: sticky, with empty space
+  // after it that is the distance the page scrolls while it is held - see the
+  // "MOBILE: stat bar" block in styles.css). Progress is measured from where the
+  // bar would naturally sit: 0 until it reaches its pin position, then 0 -> 1
+  // over that distance - the same four equal steps as on desktop.
   let scrollRaf = null;
   function updateFromScroll() {
     scrollRaf = null;
@@ -1395,31 +1415,53 @@ yield;
     requestSpring();
   }
 
-  function updateFromBarScroll() {
+  // MOBILE: stat bar
+  function updateFromPin() {
     scrollRaf = null;
-    const maxScroll = bar.scrollWidth - bar.clientWidth;
-    const progress = maxScroll > 0 ? clamp(bar.scrollLeft / maxScroll) : 0;
-    setActive(Math.min(items.length - 1, Math.round(progress * (items.length - 1))));
+    const cs = getComputedStyle(section);
+    const pinTop = parseFloat(cs.top) || 0; // where the bar sticks, px from the top of the screen
+    const travel = parseFloat(getComputedStyle(section.parentElement, "::after").height) || 0; // how far the page scrolls while it sticks
+    const above = section.previousElementSibling; // the heading + copy above the bar
+    const naturalTop = (above ? above.getBoundingClientRect().bottom : 0) + (parseFloat(cs.marginTop) || 0);
+    const progress = travel > 0 ? clamp((pinTop - naturalTop) / travel) : 0;
+    setActive(Math.min(items.length - 1, Math.floor(progress * items.length)));
     requestSpring();
   }
   function requestScrollUpdate() {
-    if (!isDesktop() || scrollRaf) return;
-    scrollRaf = requestAnimationFrame(updateFromScroll);
+    if (scrollRaf) return;
+    scrollRaf = requestAnimationFrame(isDesktop() ? updateFromScroll : updateFromPin);
   }
-  function requestBarScrollUpdate() {
-    if (isDesktop() || scrollRaf) return;
-    scrollRaf = requestAnimationFrame(updateFromBarScroll);
+
+  // MOBILE: stat bar - the layout changed (resize, rotation, stats re-stacked, web font arrived). When the
+  // bubble has to run along a different axis it jumps onto the active stat instead of gliding in from
+  // the old one. On desktop this is just the old resize handler (re-measure the bubble, re-check scroll).
+  let layoutKind = null;
+  function onLayoutChange() {
+    syncBubbleWidth();
+    syncStackedBubbleSize();
+    const kind = isDesktop() ? "desktop" : isStacked() ? "stacked" : "row";
+    if (kind !== layoutKind) {
+      if (layoutKind !== null) {
+        if (springRaf) { cancelAnimationFrame(springRaf); springRaf = null; }
+        lastTime = null;
+        bubbleVel = 0;
+        bubbleX = itemPos(activeIndex);
+        bar.style.removeProperty("--bubble-x");
+        bar.style.removeProperty("--bubble-y");
+        bar.style.setProperty("--bubble-stretch", "1");
+        setBubblePos(bubbleX);
+      }
+      layoutKind = kind;
+    }
+    requestScrollUpdate();
   }
 
   window.addEventListener("scroll", requestScrollUpdate, { passive: true });
-  bar.addEventListener("scroll", requestBarScrollUpdate, { passive: true });
-  window.addEventListener("resize", () => {
-    syncBubbleWidth();
-    if (isDesktop()) requestScrollUpdate(); else requestBarScrollUpdate();
-  });
+  window.addEventListener("resize", onLayoutChange);
+  if (mobileMQ.addEventListener) mobileMQ.addEventListener("change", onLayoutChange);
+  if ("ResizeObserver" in window) new ResizeObserver(() => { if (!isDesktop()) onLayoutChange(); }).observe(bar);
   items[0]?.classList.add("active");
-  syncBubbleWidth();
-  if (isDesktop()) requestScrollUpdate(); else requestBarScrollUpdate();
+  onLayoutChange();
 })();
 
 yield;

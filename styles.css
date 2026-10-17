@@ -900,6 +900,60 @@ section[id], #top { scroll-margin-top: 6.875rem; }
 .problem-copy p { color: var(--muted); margin-bottom: 1.25rem; font-size: 1.03rem; line-height: 1.7; }
 .problem-emphasis { color: var(--chalk) !important; font-weight: 600; font-size: 1.1rem !important; }
 
+/* MOBILE: stat bar
+   Tablets and phones (<= 900px). The desktop section pins the whole stage, but on a phone the heading and
+   copy alone are taller than the screen, so they scroll away normally and only the stat bar is pinned: it
+   stays in the middle of the screen while the page scrolls, and the glass bubble glides from stat to stat
+   (script.js, the "MOBILE: stat bar" parts of the liquid bubble code). The empty space after the bar is
+   the scroll distance it stays pinned (about the same 120vh the desktop section holds for). Tablets keep the
+   desktop pill (four stats in a row); phones held upright (<= 640px wide) stack the stats and the bubble
+   slides up and down instead. */
+@media (max-width: 900px) {
+  .problem { height: auto; padding: 4.5rem 0 0; }
+  .problem-stage { position: relative; min-height: 0; padding: 0 0 2.5rem; }
+  .stat-bar-section {
+    --stat-bar-h: 7rem; /* about the height of the bar; only used to centre it on screen while pinned */
+    margin: 2.5rem 0 0;
+  }
+  /* a bit larger and brighter than on desktop: read at arm's length, with no hover to light a stat up */
+  .stat-item { justify-content: flex-start; padding: 1.5rem 0.5rem; } /* top-aligned, so the numbers line up even if a label wraps */
+  .stat-item-value { font-size: clamp(1.5rem, 3.2vw, 2rem); }
+  .stat-item-label { font-size: 0.75rem; color: rgba(247, 246, 243, 0.5); }
+  /* the pin is skipped for reduced motion: nothing would move while the bar is held */
+  @media (prefers-reduced-motion: no-preference) {
+    .stat-bar-section {
+      position: sticky;
+      top: max(5.5rem, calc((100vh - var(--stat-bar-h)) / 2));
+      top: max(5.5rem, calc((100svh - var(--stat-bar-h)) / 2));
+    }
+    /* empty space after the bar inside the stage: the bar can only stay stuck for as long as there is room left below it */
+    .problem-stage::after {
+      content: "";
+      flex: none;
+      height: 120vh;
+      height: 120svh;
+    }
+  }
+  /* phones held upright: stack the stats (a phone turned sideways is wide enough for the row) */
+  @media (max-width: 640px) and (orientation: portrait) {
+    .stat-bar-section { --stat-bar-h: 24.4rem; }
+    .stat-bar { --stat-pad: 0.375rem; display: grid; grid-auto-rows: 1fr; width: 100%; padding: var(--stat-pad); border-radius: 3.45rem; }
+    .stat-item { gap: 0.4rem; padding: 1.125rem 1rem; }
+    .stat-item-value { font-size: 2rem; }
+    .stat-item-label { font-size: 0.8125rem; }
+    .stat-bubble {
+      top: 0;
+      bottom: auto;
+      left: var(--stat-pad);
+      right: var(--stat-pad);
+      width: auto;
+      height: var(--bubble-h, calc((100% - 2 * var(--stat-pad)) / 4));
+      border-radius: 3rem;
+      transform: translateY(var(--bubble-y, var(--stat-pad))) scaleY(var(--bubble-stretch, 1));
+    }
+  }
+}
+
 .placeholder-frame {
   aspect-ratio: 16/7;
   border-radius: 1.25rem;
@@ -1718,13 +1772,6 @@ section[id], #top { scroll-margin-top: 6.875rem; }
     font-size: clamp(2.1rem, 9.5vw, 3.4rem);
     text-wrap: balance;
   }
-  .problem { height: auto; padding: 4.5rem 0 0; }
-  .problem-stage { position: relative; min-height: 0; padding: 0 0 2.5rem; }
-  .stat-bar-section { height: auto; padding: 2.5rem 1.5rem 0; }
-  .stat-bar-inner { position: relative; height: auto; padding: 0; transform: none; }
-  .stat-bar { padding: 0.375rem; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; }
-  .stat-bar::-webkit-scrollbar { display: none; }
-  .stat-item { min-width: 9.375rem; padding: 1.125rem 0.875rem; scroll-snap-align: start; }
   .nav, .nav-cta { display: none; }
   .hamburger { display: flex; }
   .header-row {
@@ -1774,7 +1821,6 @@ section[id], #top { scroll-margin-top: 6.875rem; }
   .proof-video-card { flex: 0 0 11rem; scroll-snap-align: start; }
 }
 @media (max-width: 560px) {
-  .stat-item { min-width: 8.25rem; padding: 1rem 0.75rem; }
   .work-grid { grid-template-columns: repeat(2, 1fr); }
   /* phones: the same one-line strip (see the 900px block), with slightly bigger 12.5rem cards */
   .proof-video-card { flex-basis: 12.5rem; }
