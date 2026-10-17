@@ -622,6 +622,59 @@ services.forEach((s, i) => {
   updateTarget();
 })();
 
+/* MOBILE: What We Do - the same pinned scroll carousel on tablets and phones (900px and below).
+   The desktop code above stops at 900px; this one takes over there and sets the very same classes
+   (.active / .previous / .next, the glass card, dots and counter) with the same stages and dead zone,
+   so the look and the animation come from the one set of CSS rules. The stage is the section's sticky
+   one-screen box, so its scroll distance is the section's height minus that box's height. */
+(function () {
+  const section = document.getElementById("services");
+  const cards = Array.from(document.querySelectorAll(".service-row"));
+  const dots = Array.from(document.querySelectorAll(".services-dot"));
+  const counter = document.getElementById("service-current");
+  const stage = section && section.querySelector(".section-inner");
+  if (!stage || !cards.length || !counter) return;
+
+  const n = cards.length;
+  const mobile = window.matchMedia("(max-width: 900px)");
+  const DEAD_ZONE = .035;
+  let activeIndex = 0;
+  let raf = null;
+
+  function render(index) {
+    cards.forEach((card, i) => {
+      card.classList.toggle("active", i === index);
+      card.classList.toggle("previous", i === index - 1);
+      card.classList.toggle("next", i === index + 1);
+      card.classList.toggle("service-row--glass", i === index);
+    });
+    dots.forEach((dot, i) => dot.classList.toggle("active", i === index));
+    counter.textContent = String(index + 1).padStart(2, "0");
+  }
+
+  function update() {
+    raf = null;
+    if (!mobile.matches) return; // on desktop the code above does this
+    const distance = section.offsetHeight - stage.offsetHeight;
+    const progress = distance > 0 ? Math.max(0, Math.min(1, -section.getBoundingClientRect().top / distance)) : 0;
+    while (activeIndex < n - 1 && progress >= ((activeIndex + 1) / n) + DEAD_ZONE) activeIndex++;
+    while (activeIndex > 0 && progress < (activeIndex / n) - DEAD_ZONE) activeIndex--;
+    render(activeIndex);
+  }
+
+  function requestUpdate() {
+    if (raf) return;
+    raf = requestAnimationFrame(update);
+  }
+
+  window.addEventListener("scroll", requestUpdate, { passive: true });
+  window.addEventListener("resize", requestUpdate);
+  window.addEventListener("orientationchange", requestUpdate);
+  if (mobile.addEventListener) mobile.addEventListener("change", requestUpdate);
+  else if (mobile.addListener) mobile.addListener(requestUpdate);
+  update();
+})();
+
 yield;
 /* ---------- Header services menu (desktop dropdown + mobile accordion) ---------- */
 // The four options are the What We Do cards, in the same order (the card's line break becomes a space).
@@ -629,8 +682,9 @@ const serviceLabels = services.map(s => s.title.replace(/<br\s*\/?>/g, " "));
 
 // Scroll to What We Do and land on the chosen card. On desktop the section is a tall pinned track in
 // which each card is the active one around scroll progress (i + 0.5) / n, so aim for the middle of
-// that stretch rather than a boundary. On small screens the cards are simply stacked, so scroll to the
-// card itself (the first one to the section top, so the heading shows).
+// that stretch rather than a boundary. Tablets and phones (900px and below) pin the section the same way
+// (see "MOBILE: What We Do" above), so there the same middle-of-the-stretch is measured against the
+// section's own one-screen sticky box.
 function scrollToService(index) {
   const section = document.getElementById("services");
   let top;
@@ -638,8 +692,8 @@ function scrollToService(index) {
     const distance = section.offsetHeight - window.innerHeight;
     top = section.offsetTop + ((index + 0.5) / services.length) * distance;
   } else {
-    const target = index === 0 ? section : servicesList.children[index];
-    top = target.getBoundingClientRect().top + window.scrollY - parseFloat(getComputedStyle(section).scrollMarginTop);
+    const distance = section.offsetHeight - section.querySelector(".section-inner").offsetHeight;
+    top = section.getBoundingClientRect().top + window.scrollY + ((index + 0.5) / services.length) * distance;
   }
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   window.scrollTo({ top, behavior: reduceMotion ? "instant" : "smooth" });

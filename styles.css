@@ -1894,3 +1894,49 @@ section[id], #top { scroll-margin-top: 6.875rem; }
   .pricing-toggle { display: flex; width: 100%; }
   .pricing-toggle-option { flex: 1 1 0; min-width: 0; padding-inline: 0.5rem; white-space: nowrap; }
 }
+
+/* ============================================================================================
+   MOBILE: What We Do
+   Tablets and phones (900px and below): the SAME pinned 3D scroll carousel as on the desktop (the
+   .services / .service-row rules in "Services: stacked scroll carousel"; script.js sets .active /
+   .previous / .next as the page scrolls), just sized for a narrow screen. Everything for this section on
+   small screens is in this one block, which also replaces the older stacked-list rules for these
+   classes in the 900px block above. The four cards sit in ONE grid cell, so they are always exactly
+   the same size (that of the tallest card's content): nothing can overflow or be clipped at any width.
+   ============================================================================================ */
+@media (max-width: 900px) {
+  /* MOBILE: What We Do */
+  /* the pin: a tall track with a one-screen sticky stage inside it (svh = the screen with the browser bars showing, so it never grows or jumps while scrolling) */
+  .services { height: 340vh; height: 340svh; padding: 0; overflow-x: clip; }
+  .services > .section-inner { position: sticky; top: 0; height: 100vh; height: 100svh; min-height: 0; padding: 5.5rem 0 1.25rem; justify-content: center; }
+  .services-heading { align-items: flex-start; gap: 1rem; margin-bottom: 1.25rem; padding-inline: var(--gutter); }
+  .services-heading .section-sub { margin: 0.5rem 0 0; font-size: 0.95rem; line-height: 1.5; }
+  .services-counter { padding-top: 0.55rem; font-size: 0.75rem; }
+  /* the carousel stage: exactly the page gutter on both sides; all four cards share the one grid cell */
+  .services-list { --svc-pad: clamp(1.25rem, 6vw, 2rem); display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; flex: none; width: calc(100% - 2 * var(--gutter)); height: auto; perspective: 1800px; }
+  .services .service-row { grid-area: 1 / 1; position: relative; left: auto; top: auto; width: 100%; height: auto; min-height: 17rem; min-height: clamp(15rem, 40svh, 18rem); padding: 3.5rem var(--svc-pad) 1.5rem; border-radius: 1.5rem; box-shadow: inset 0 1px 0 rgba(255,255,255,.20), inset 0 -1px 0 rgba(0,0,0,.3), 0 22px 48px rgba(0,0,0,.5); opacity: 0; transform: translate3d(0, 0, -460px) rotateY(-58deg) scale(.72); pointer-events: none; }
+  /* the three poses are the desktop ones (same depth, turn, scale and dimming); only the sideways shift differs: it is worked out so
+     the side cards leave just a ~12px dim edge at the very edge of the screen, inside the gutter, and never any of their text */
+  .services .service-row.active { opacity: 1; transform: none; z-index: 3; }
+  .services .service-row.previous { opacity: .24; transform: translate3d(calc(-93% - 13px), 0, -210px) rotateY(20deg) scale(.77); z-index: 1; }
+  .services .service-row.next { opacity: .24; transform: translate3d(calc(93% + 13px), 0, -190px) rotateY(-20deg) scale(.77); z-index: 1; }
+  .service-index { top: 1.375rem; left: var(--svc-pad); font-size: 0.7rem; }
+  .service-tag { top: 1.375rem; left: calc(var(--svc-pad) + 2.2rem); font-size: 0.64rem; letter-spacing: 0.16em; white-space: nowrap; }
+  /* titles wrap inside the card (the desktop one-line rules are switched off here) */
+  .services .service-title-wrap h3 { max-width: 100%; font-size: clamp(1.75rem, 7.6vw, 3rem); line-height: 0.98; white-space: normal; overflow-wrap: break-word; }
+  .services .service-desc { margin: 0.9rem 0 0; font-size: 0.95rem; line-height: 1.5; }
+  .services-dots { display: flex; margin-top: 1.25rem; }
+  .services-note { display: block; margin: 0.9rem auto 0; padding-inline: var(--gutter); font-size: 0.62rem; letter-spacing: 0.12em; }
+  /* very short screens (a phone turned sideways): the heading, card and dots still have to fit in the one pinned screen, so the sub-line and the hint go and the card tightens up */
+  @media (max-height: 540px) {
+    .services > .section-inner { padding-top: 4.5rem; padding-bottom: 0.75rem; }
+    .services-heading { margin-bottom: 0.75rem; }
+    .services-heading .section-sub, .services-note { display: none; }
+    .services-counter { padding-top: 0.4rem; }
+    .services .service-row { min-height: 0; padding: 2.75rem var(--svc-pad) 1rem; }
+    .service-index, .service-tag { top: 1rem; }
+    .services .service-title-wrap h3 { font-size: clamp(1.5rem, 9svh, 2.2rem); }
+    .services .service-desc { margin-top: 0.6rem; }
+    .services-dots { margin-top: 0.75rem; }
+  }
+}
