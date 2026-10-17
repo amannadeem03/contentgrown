@@ -1384,17 +1384,15 @@ yield;
     else bar.style.removeProperty("--bubble-h");
   }
 
-  if (reducedMotion) {
-    // No spring, no scroll-pin - jump straight to whichever item is in
-    // frame and stop there.
+  // MOBILE: stat bar - reduced motion. Desktop keeps what it always did: no spring, no scroll-pin, the bubble stays
+  // parked on the first stat. Phones and tablets (<= 900px) still hold the bar and follow the scroll (many phones have
+  // "remove animations" / "reduce motion" on, and the bar would be dead) - the bubble just jumps (see requestSpring).
+  const parked = () => reducedMotion && isDesktop();
+  function park() {
+    setActive(0);
     items[0]?.classList.add("active");
     syncBubbleWidth();
     bar.style.setProperty("--bubble-x", `${items[0]?.offsetLeft || 0}px`);
-    window.addEventListener("resize", () => {
-      syncBubbleWidth();
-      bar.style.setProperty("--bubble-x", `${items[activeIndex]?.offsetLeft || 0}px`);
-    });
-    return;
   }
 
   // Glide: bubbleX eases toward the active item's position with a critically
@@ -1446,6 +1444,14 @@ yield;
     }
   }
   function requestSpring() {
+    // MOBILE: stat bar - reduced motion: no glide, the bubble jumps straight onto the active stat
+    if (reducedMotion) {
+      bubbleX = itemPos(activeIndex);
+      bubbleVel = 0;
+      setBubblePos(bubbleX);
+      bar.style.setProperty("--bubble-stretch", "1");
+      return;
+    }
     if (!springRaf) springRaf = requestAnimationFrame(springTick);
   }
 
@@ -1473,8 +1479,10 @@ yield;
   function updateFromPin() {
     scrollRaf = null;
     const cs = getComputedStyle(section);
-    const pinTop = parseFloat(cs.top) || 0; // where the bar sticks, px from the top of the screen
-    const travel = parseFloat(getComputedStyle(section.parentElement, "::after").height) || 0; // how far the page scrolls while it sticks
+    // where the bar sticks, px from the top of the screen / how far the page scrolls while it sticks. The fallbacks
+    // (same numbers as the CSS) are for a browser that does not report a resolved value for these two.
+    const pinTop = parseFloat(cs.top) || Math.max(88, (window.innerHeight - section.offsetHeight) / 2);
+    const travel = parseFloat(getComputedStyle(section.parentElement, "::after").height) || window.innerHeight * 1.2;
     const above = section.previousElementSibling; // the heading + copy above the bar
     const naturalTop = (above ? above.getBoundingClientRect().bottom : 0) + (parseFloat(cs.marginTop) || 0);
     const progress = travel > 0 ? clamp((pinTop - naturalTop) / travel) : 0;
@@ -1482,7 +1490,7 @@ yield;
     requestSpring();
   }
   function requestScrollUpdate() {
-    if (scrollRaf) return;
+    if (scrollRaf || parked()) return;
     scrollRaf = requestAnimationFrame(isDesktop() ? updateFromScroll : updateFromPin);
   }
 
@@ -1491,6 +1499,7 @@ yield;
   // the old one. On desktop this is just the old resize handler (re-measure the bubble, re-check scroll).
   let layoutKind = null;
   function onLayoutChange() {
+    if (parked()) { layoutKind = "desktop"; park(); return; } // desktop + reduced motion: the bubble stays on the first stat
     syncBubbleWidth();
     syncStackedBubbleSize();
     const kind = isDesktop() ? "desktop" : isStacked() ? "stacked" : "row";
@@ -1513,6 +1522,7 @@ yield;
   window.addEventListener("scroll", requestScrollUpdate, { passive: true });
   window.addEventListener("resize", onLayoutChange);
   if (mobileMQ.addEventListener) mobileMQ.addEventListener("change", onLayoutChange);
+  else if (mobileMQ.addListener) mobileMQ.addListener(onLayoutChange); // Safari before 14
   if ("ResizeObserver" in window) new ResizeObserver(() => { if (!isDesktop()) onLayoutChange(); }).observe(bar);
   items[0]?.classList.add("active");
   onLayoutChange();
