@@ -422,6 +422,63 @@ section[id], #top { scroll-margin-top: 6.875rem; }
   .btn-glass.btn-solid::after { animation: none; }
 }
 
+/* MOBILE: button glow
+   Phones and tablets only (<= 900px). Above 900px nothing below applies (.btn-beam is display:none there),
+   so the desktop beam above is untouched.
+   The desktop beam turns by animating a custom property (--beam-angle). That is a main-thread animation that
+   needs @property support (iOS Safari 16.4+) and stalls whenever the page is busy (four background videos),
+   which is why it sat still on phones. Here the SAME arc turns by rotating a layer with `transform`, which
+   every phone browser animates on the GPU compositor, whatever the main thread is doing. Same look: same
+   1.5px pill ring, same stops and colour, same 5.2s turn. A rotating layer needs a parent that does not
+   rotate to cut it to the ring, so each solid glass button carries one tiny <span class="btn-beam"> (the
+   ring) whose ::before is the turning gradient. The "reduce motion" setting still stops the turn. */
+.btn-beam { display: none; }
+@media (max-width: 900px) {
+  .btn-glass.btn-solid::after { display: none; }
+  .btn-beam {
+    display: block;
+    position: absolute;
+    inset: 0;
+    padding: 1.5px;
+    border-radius: inherit;
+    overflow: hidden;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+  /* a square (width = height via the padding) centred on the button and wider than its diagonal, so it
+     covers the whole ring at every angle; the .btn-beam parent clips it to the ring */
+  .btn-beam::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: calc(100% + 3rem);
+    height: 0;
+    padding-bottom: calc(100% + 3rem);
+    background: conic-gradient(
+      from 0deg,
+      transparent 0deg 220deg,
+      rgba(248, 98, 21, 0.12) 240deg,
+      rgba(248, 98, 21, 0.5) 260deg,
+      var(--amber) 285deg,
+      var(--amber) 345deg,
+      rgba(248, 98, 21, 0.5) 360deg
+    );
+    transform: translate(-50%, -50%);
+    will-change: transform;
+    animation: btn-beam-turn 5.2s linear infinite;
+  }
+  @keyframes btn-beam-turn {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+  }
+}
+@media (max-width: 900px) and (prefers-reduced-motion: reduce) {
+  .btn-beam::before { animation: none; }
+}
+
 @media (hover: hover) and (pointer: fine) {
   .btn:hover,
   .btn:focus-visible { transform: scale(1.04); }
