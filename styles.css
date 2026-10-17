@@ -976,20 +976,29 @@ section[id], #top { scroll-margin-top: 6.875rem; }
   .stat-item { justify-content: flex-start; padding: 1.5rem 0.5rem; } /* top-aligned, so the numbers line up even if a label wraps */
   .stat-item-value { font-size: clamp(1.5rem, 3.2vw, 2rem); }
   .stat-item-label { font-size: 0.75rem; color: rgba(247, 246, 243, 0.5); }
-  /* the pin is skipped for reduced motion: nothing would move while the bar is held */
-  @media (prefers-reduced-motion: no-preference) {
-    .stat-bar-section {
-      position: sticky;
-      top: max(5.5rem, calc((100vh - var(--stat-bar-h)) / 2));
-      top: max(5.5rem, calc((100svh - var(--stat-bar-h)) / 2));
-    }
-    /* empty space after the bar inside the stage: the bar can only stay stuck for as long as there is room left below it */
-    .problem-stage::after {
-      content: "";
-      flex: none;
-      height: 120vh;
-      height: 120svh;
-    }
+  /* The pin is NOT switched off for reduced motion: many phones have "remove animations" / "reduce motion" on, and the
+     bar would then be dead. Holding the bar and changing the lit stat as the user scrolls is not an animation; with
+     reduced motion script.js jumps the bubble from stat to stat instead of gliding it, and the colour fade is removed below. */
+  .stat-bar-section {
+    position: -webkit-sticky; /* Safari before 13 */
+    position: sticky;
+    top: max(5.5rem, calc((100vh - var(--stat-bar-h)) / 2));
+  }
+  /* svh needs @supports: a declaration with var() in it is never dropped at parse time, so on a browser that does not know
+     svh (Safari before 15.4) a second plain `top:` line would be thrown away at computed-value time AND replace the vh line
+     above it, leaving top: auto and no pin at all. */
+  @supports (height: 100svh) {
+    .stat-bar-section { top: max(5.5rem, calc((100svh - var(--stat-bar-h)) / 2)); }
+  }
+  /* empty space after the bar inside the stage: the bar can only stay stuck for as long as there is room left below it */
+  .problem-stage::after {
+    content: "";
+    flex: none;
+    height: 120vh;
+    height: 120svh;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .stat-item, .stat-item-value, .stat-item-label { transition: none; }
   }
   /* phones held upright: stack the stats (a phone turned sideways is wide enough for the row) */
   @media (max-width: 640px) and (orientation: portrait) {
