@@ -881,6 +881,47 @@ window.addEventListener("resize", () => {
 });
 requestHowScrollUpdate();
 
+/* MOBILE: How It Works scroll-follow
+   Tablets and phones (900px and below): the section is not pinned there (the four steps are a plain stack of boxes with the
+   preview card under them), so the pinned-track maths above stops at 900px (its early return) and this takes over. The step
+   whose box is nearest the vertical middle of the screen becomes the active one, set through the very same setActiveHowStep()
+   the desktop uses (so the highlight, the preview card's title and text, the "0X / 04" counter and the progress bar behave
+   exactly as on the desktop). Scrolling up reverses it. Nothing is pinned and no size changes: only the active state does.
+   scrollHowIndex is kept in step with what is showing, so switching back to a wide window leaves the desktop code in the
+   right state. */
+const howMobile = window.matchMedia("(max-width: 900px)");
+const HOW_MOBILE_HYSTERESIS = 24; // px: the next step must be this much nearer the middle than the current one before it takes over
+let howMobileRaf = null;
+function updateHowFromScrollMobile() {
+  howMobileRaf = null;
+  if (!howMobile.matches) return; // on desktop the code above does this
+  // measured with offsetTop / offsetHeight (not getBoundingClientRect) so the steps' fade-in slide never moves the answer
+  const stackTop = howSteps.getBoundingClientRect().top;
+  const middle = window.innerHeight / 2;
+  const away = stepEls.map(el => Math.abs(stackTop + el.offsetTop + el.offsetHeight / 2 - middle));
+  let nearest = 0;
+  away.forEach((d, i) => { if (d < away[nearest]) nearest = i; });
+  if (nearest === scrollHowIndex || away[nearest] > away[scrollHowIndex] - HOW_MOBILE_HYSTERESIS) return;
+  scrollHowIndex = nearest;
+  setActiveHowStep(nearest);
+}
+function requestHowMobileUpdate() {
+  if (howMobileRaf || !howMobile.matches) return;
+  howMobileRaf = requestAnimationFrame(updateHowFromScrollMobile);
+}
+function onHowMobileChange() {
+  if (howMobile.matches) { requestHowMobileUpdate(); return; }
+  positionHowStepBubble(scrollHowIndex); // back to a wide window: hand over to the desktop code with its highlight box in the right place
+  requestHowScrollUpdate();
+}
+window.addEventListener("scroll", requestHowMobileUpdate, { passive: true });
+window.addEventListener("resize", requestHowMobileUpdate);
+window.addEventListener("orientationchange", requestHowMobileUpdate);
+window.addEventListener("load", requestHowMobileUpdate);
+if (howMobile.addEventListener) howMobile.addEventListener("change", onHowMobileChange);
+else if (howMobile.addListener) howMobile.addListener(onHowMobileChange);
+requestHowMobileUpdate();
+
 yield;
 /* ---------- Pricing packages ---------- */
 // Feature icons: 24x24 line icons drawn with currentColor; "spark" is a small filled four-point star.
