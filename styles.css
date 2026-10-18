@@ -1959,6 +1959,54 @@ section[id], #top { scroll-margin-top: 6.875rem; }
   .how-step { transition: opacity 0.4s ease, border-color 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease; }
   .how-preview.reveal { transform: none; }
 }
+
+/* ============================================================================================
+   MOBILE: calmer scroll effects
+   Tablets and phones (900px and below) only, and only for visitors who have NOT asked for reduced motion (they
+   keep the plain fades above). Nothing here applies above 900px, so the desktop pacing, which reads right on a
+   big screen, is untouched. Only scroll-driven / scroll-triggered timing is changed here (what the page does
+   as it is scrolled): never hover, tap or click feedback, the nav, the menu or the dialog. Same looks, same
+   distances, same colours - only the pace.
+   A thumb flick moves the page far faster than a mouse wheel and shows several blocks in one frame, so the
+   desktop's quick, hard-front-loaded fade-in (0.9s on cubic-bezier(.16,1,.3,1): nearly finished after a third
+   of a second) reads as a snap. Here every scroll-in takes 1.2s on a gentler curve, and the blocks that appear
+   in the same frame come in one after another (script.js sets --rd, "Scroll reveal").
+   ============================================================================================ */
+@media (max-width: 900px) and (prefers-reduced-motion: no-preference) {
+  :root {
+    --calm-dur: 1.2s;
+    --calm-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+    --calm-soft: 0.6s; /* a highlight / state change that follows the scroll position */
+  }
+  /* scroll-in of every .reveal block: opacity + the 22px slide, same travel as on desktop, 0.9s -> 1.2s on a gentler curve.
+     --rd = the stagger delay script.js gives a block that appears in the same frame as others (0s otherwise). */
+  .reveal { transition: opacity var(--calm-dur) var(--calm-ease) var(--rd, 0s), transform var(--calm-dur) var(--calm-ease) var(--rd, 0s); }
+  /* the same, for the blocks whose own rules restate the transition list next to a hover / colour transition (those two stay as they were) */
+  .work-card.reveal { transition: opacity var(--calm-dur) var(--calm-ease) var(--rd, 0s), transform var(--calm-dur) var(--calm-ease) var(--rd, 0s), scale 0.3s var(--pop-ease), translate 0.3s var(--pop-ease), border-color 0.3s ease, box-shadow 0.3s ease; }
+  .btn.reveal { transition: opacity var(--calm-dur) var(--calm-ease) var(--rd, 0s), transform var(--calm-dur) var(--calm-ease) var(--rd, 0s), border-color 0.28s ease, background-color 0.28s ease; }
+  .custom-production.reveal { transition: opacity var(--calm-dur) var(--calm-ease) var(--rd, 0s), transform var(--calm-dur) var(--calm-ease) var(--rd, 0s), scale 0.3s var(--pop-ease), border-color 0.3s ease; }
+  /* a work card that is revealed because a visitor TAPPED a filter tab (script.js marks it) keeps the original quick fade: tap feedback is not slowed */
+  .work-card.reveal.reveal-quick { transition: opacity 0.9s var(--ease), transform 0.9s var(--ease), scale 0.3s var(--pop-ease), translate 0.3s var(--pop-ease), border-color 0.3s ease, box-shadow 0.3s ease; }
+
+  /* How It Works. The lit step follows the scroll (script.js), so its change of state is calmer: the lit border and glow take
+     0.6s (was 0.3s) and so does the orange tint, which used to switch on in one frame (a gradient cannot transition by itself).
+     The tint is the very same two gradients as the lit step had, with their strength multiplied by --how-tint (0 = off, 1 = lit,
+     exactly the old look), and --how-tint is what fades. A browser that cannot animate a registered property (@property, iOS
+     before 16.4) simply switches the tint on at once, as before. The scroll-in of the step boxes is the shared one above. */
+  @property --how-tint { syntax: "<number>"; inherits: false; initial-value: 0; }
+  .how-step {
+    --how-tint: 0;
+    --how-glow: radial-gradient(120% 170% at 8% 0%, rgba(255, 183, 138, calc(0.22 * var(--how-tint))), transparent 48%), linear-gradient(105deg, rgba(248, 98, 21, calc(0.16 * var(--how-tint))), rgba(248, 98, 21, calc(0.055 * var(--how-tint))) 58%, rgba(255, 255, 255, calc(0.018 * var(--how-tint))));
+    background-image: var(--how-glow);
+    transition: opacity var(--calm-dur) var(--calm-ease) var(--rd, 0s), transform var(--calm-dur) var(--calm-ease) var(--rd, 0s), border-color var(--calm-soft) var(--ease-soft), background-color var(--calm-soft) var(--ease-soft), box-shadow var(--calm-soft) var(--ease-soft), --how-tint var(--calm-soft) var(--ease-soft);
+  }
+  .how-step.active { --how-tint: 1; background-color: transparent; background-image: var(--how-glow); }
+  /* progress bar under the preview text: 0.42s -> 0.65s */
+  .how-preview-progress span { transition: width 0.65s var(--ease-soft); }
+
+  /* header: the darker glass it turns into after the first few pixels of scroll: 0.4s -> 0.6s */
+  .header-row { transition: background var(--calm-soft) var(--ease-soft), border-color var(--calm-soft) var(--ease-soft); }
+}
 @media (max-width: 560px) {
   /* Standard / Advanced toggle: as wide as the cards under it, two equal halves. It used to be a fixed 318px strip that
      was cut off (a hidden sideways scroll) on screens narrower than about 370px. */
