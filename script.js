@@ -1024,7 +1024,18 @@ requestHowScrollUpdate();
    right state. */
 const howMobile = window.matchMedia("(max-width: 900px)");
 const HOW_MOBILE_HYSTERESIS = 24; // px: the next step must be this much nearer the middle than the current one before it takes over
+/* MOBILE: calmer scroll effects (with the block of that name in styles.css; skipped when reduced motion is asked for).
+   A thumb flick can carry the middle of the screen past all four steps in half a second, which made the highlight and the
+   preview text flick through every step. So a step stays lit for at least HOW_MOBILE_DWELL ms before the next one takes over (a
+   step that wants to take over sooner waits for the rest of that time, then the step nearest the middle at that moment wins:
+   a hard flick goes to where it landed instead of flashing through the steps in between), and the preview text fades in
+   gently (opacity only) when it changes. A slow scroll, one step every half second or slower, is not delayed at all. */
+const HOW_MOBILE_DWELL = 380; // ms
+const howReduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+const howPreviewCopy = document.querySelector(".how-preview-copy");
 let howMobileRaf = null;
+let howMobileLastChange = -Infinity;
+let howMobileTimer = null;
 function updateHowFromScrollMobile() {
   howMobileRaf = null;
   if (!howMobile.matches) return; // on desktop the code above does this
@@ -1035,8 +1046,18 @@ function updateHowFromScrollMobile() {
   let nearest = 0;
   away.forEach((d, i) => { if (d < away[nearest]) nearest = i; });
   if (nearest === scrollHowIndex || away[nearest] > away[scrollHowIndex] - HOW_MOBILE_HYSTERESIS) return;
+  const calm = !howReduced.matches;
+  const wait = calm ? howMobileLastChange + HOW_MOBILE_DWELL - performance.now() : 0;
+  if (wait > 0) { // the lit step has not been lit long enough yet: look again when it has
+    if (!howMobileTimer) howMobileTimer = setTimeout(() => { howMobileTimer = null; requestHowMobileUpdate(); }, wait);
+    return;
+  }
   scrollHowIndex = nearest;
+  howMobileLastChange = performance.now();
   setActiveHowStep(nearest);
+  if (calm && howPreviewCopy && howPreviewCopy.animate) {
+    howPreviewCopy.animate([{ opacity: 0.3 }, { opacity: 1 }], { duration: 650, easing: "cubic-bezier(0.22, 0.61, 0.36, 1)" });
+  }
 }
 function requestHowMobileUpdate() {
   if (howMobileRaf || !howMobile.matches) return;
@@ -1704,7 +1725,34 @@ yield;
 
 yield;
 /* ---------- Scroll reveal ---------- */
+/* MOBILE: calmer scroll effects (see the block of that name in styles.css). On phones and tablets (900px and below, reduced
+   motion not asked for) the blocks that come into view in the SAME frame - a thumb flick shows several at once, and so does
+   jumping to a section from the menu - are no longer all faded in together: they are staggered top to bottom, left to right
+   (--rd = the delay, a stylesheet variable the .reveal transition reads), and the 1.2s fade itself is set in the stylesheet.
+   Blocks that come in alone get no delay. Above 900px none of this runs. */
+const revealMobile = window.matchMedia("(max-width: 900px)");
+const revealReduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+const REVEAL_STAGGER = 0.12;    // seconds between two blocks that appear in the same frame
+const REVEAL_STAGGER_MAX = 5;   // the 6th and later share the last delay (0.6s), so a long batch never drags
+let revealQuickUntil = 0;       // set by a tap on a work filter tab: the cards that tap brings in keep their quick desktop fade
+document.querySelectorAll(".filter-tab").forEach(tab => tab.addEventListener("click", () => { revealQuickUntil = performance.now() + 1500; }));
+function calmRevealBatch(entries) {
+  const showing = entries.filter(e => e.isIntersecting);
+  if (performance.now() < revealQuickUntil) { showing.forEach(e => e.target.classList.add("reveal-quick")); return; }
+  if (showing.length < 2) return;
+  showing.sort((a, b) => (a.boundingClientRect.top - b.boundingClientRect.top) || (a.boundingClientRect.left - b.boundingClientRect.left));
+  showing.forEach((e, i) => {
+    const delay = Math.min(i, REVEAL_STAGGER_MAX) * REVEAL_STAGGER;
+    if (!delay) return;
+    e.target.style.setProperty("--rd", `${delay}s`);
+    setTimeout(() => { // once it has faded in, so a later hover / state change is never delayed
+      e.target.style.removeProperty("--rd");
+      if (!e.target.getAttribute("style")) e.target.removeAttribute("style"); // no empty style="" left behind
+    }, (delay + 1.5) * 1000);
+  });
+}
 const revealObserver = new IntersectionObserver((entries) => {
+  if (revealMobile.matches && !revealReduced.matches) calmRevealBatch(entries);
   entries.forEach(entry => {
     if (entry.isIntersecting) {
       entry.target.classList.add("in-view");
