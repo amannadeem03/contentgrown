@@ -670,6 +670,32 @@ section[id], #top { scroll-margin-top: 6.875rem; }
       #000 calc(50% - var(--hero-seam)), rgba(0, 0, 0, var(--hero-seam-floor)) 50%, #000 calc(50% + var(--hero-seam)));
   }
 }
+/* MOBILE: hero video alignment
+   The columns themselves are already equal, flush and level (same width, same top and bottom, the join at the exact
+   middle). What looked misaligned was the PICTURE inside them: all four clips are 9:16 and every column is far
+   narrower than that, so the clip is scaled to the column's height and only a strip of it shows, and with the default
+   centre crop the speaker lands wherever he happens to stand in that clip (video-1 sits left of centre in his frame,
+   video-27 right of it) and at a different height (head at 29% / 46% / 37% / 42% of the frame's height). A column this
+   narrow has no spare height to move the picture with object-position, so each clip is drawn 25% taller than its
+   column (the column clips the excess) and nudged up by its own offset so every head lands at the same height (34% of
+   the column), with a per-clip object-position that puts the head in the middle of the column. The offsets belong to
+   the clip, not the slot (matched by the clip's poster), so they hold whichever order the clips are in. Phones turned
+   sideways (two columns that are wider than the clip, where nothing fits the same way) keep the plain centred crop. */
+@media (max-width: 900px) {
+  .hero-bg-col video {
+    position: absolute;
+    left: 0;
+    height: 125%;
+    top: -12%;
+  }
+  .hero-bg-col video[poster*="/video-01.jpg"] { top: -2.3%;  object-position: 49% 50%; }
+  .hero-bg-col video[poster*="/video-1.jpg"]  { top: -23.5%; object-position: 40% 50%; }
+  .hero-bg-col video[poster*="/video-3.jpg"]  { top: -12.3%; object-position: 47% 50%; }
+  .hero-bg-col video[poster*="/video-27.jpg"] { top: -17.3%; object-position: 66% 50%; }
+}
+@media (max-width: 700px) and (min-aspect-ratio: 9/8) {
+  .hero-bg-col video[poster] { position: static; height: 100%; object-position: 50% 50%; }
+}
 .hero::before {
   content: "";
   position: absolute;
