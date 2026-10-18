@@ -1978,8 +1978,9 @@ section[id], #top { scroll-margin-top: 6.875rem; }
 @media (max-width: 900px) {
   /* MOBILE: What We Do */
   /* the pin: a tall track with a one-screen sticky stage inside it (svh = the screen with the browser bars showing, so it never grows or jumps while scrolling) */
-  /* 440svh = one screen of stage + three card-to-card stretches of ~113svh each, so a normal swipe moves about one card (it was 340svh: a flick covered 2-3 cards) */
-  .services { height: 440vh; height: 440svh; padding: 0; overflow-x: clip; }
+  /* 700svh = one screen of stage + three card-to-card stretches of 200svh each (was 440svh = 113svh each; the desktop gives 60% of a screen per card, but a thumb
+     flick covers far more ground than a mouse wheel, so a phone needs the longer pin to feel as unhurried): a normal swipe moves about half a card and even a hard flick only about two; the pacing constants in script.js ("MOBILE: What We Do") go with this number */
+  .services { height: 700vh; height: 700svh; padding: 0; overflow-x: clip; }
   .services > .section-inner { position: sticky; top: 0; height: 100vh; height: 100svh; min-height: 0; padding: 5.5rem 0 1.25rem; justify-content: center; }
   .services-heading { align-items: flex-start; gap: 1rem; margin-bottom: 1.25rem; padding-inline: var(--gutter); }
   .services-heading .section-sub { margin: 0.5rem 0 0; font-size: 0.95rem; line-height: 1.5; }

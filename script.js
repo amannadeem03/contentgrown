@@ -623,15 +623,24 @@ services.forEach((s, i) => {
 })();
 
 /* MOBILE: What We Do - the same pinned scroll carousel on tablets and phones (900px and below).
-   The desktop code above stops at 900px; this one takes over there. The stage is the section's sticky
+   PACING - the whole feel of the section; a thumb flick covers far more ground than a mouse wheel, so a phone gets a
+   longer, calmer pin than the desktop (which gives 0.6 screens per card). Change these together (measured at 390x844):
+     scroll per card  200svh between two cards: .services is 700svh = 1 stage + 3 x 200svh, in styles.css [was 113svh]
+                      (a normal swipe of ~800px moves half a card, a hard flick of ~3500px about 2 cards [was 3.7])
+     HOLD  .2         each card sits still for 20% of that stretch at both ends (40svh); the turn takes the middle 60% (120svh)
+     OMEGA 6          spring speed: a single card is ~90% there after 0.65 s and settled after 1 s [was 9: 0.43 s / 0.65 s]
+     LEAD  .14        the next card in a cascade starts when the current one is 14% from rest: ~0.6 s between card swaps,
+                      so a menu jump over 3 cards plays in ~2.4 s [was .06 with OMEGA 9: ~0.5 s between swaps]
+   The cards always play one at a time, so none is ever skipped, however hard the flick. The desktop code above stops
+   at 900px; this one takes over there. The stage is the section's sticky
    one-screen box, so how far the visitor is through the pin is  -section.top / (section height - stage height)
    (0 to 1). That is NOT put on the cards directly: one flick of the thumb can cover most of the pin in a few
    frames, and cards that follow the raw scroll then jump several at once and have no time to move.
    Instead:
    - "goal" = where the scroll says the cards are (each card holds for a stretch of scroll, then the next turns
      in), "shown" = the position actually drawn. Shown chases the goal with a critically damped spring and is
-     only ever aimed ONE card ahead, so a flick plays as a quick cascade, every card in order (about half a
-     second each), while a slow drag simply follows the finger;
+     only ever aimed ONE card ahead, so a flick plays as a calm cascade, every card in order (about 0.6 s
+     each), while a slow drag simply follows the finger;
    - cards are drawn at fractional positions: each pose (side shift, depth, turn, scale, opacity) is blended
      between the same poses the CSS gives .previous / .active / .next, so the frames in between are smooth and
      the resting frames are exactly the desktop look;
@@ -652,8 +661,8 @@ services.forEach((s, i) => {
   const mobile = window.matchMedia("(max-width: 900px)");
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
   const HOLD = .2;        // each card holds for this share of the scroll between two cards (at both ends of it)
-  const OMEGA = 9;        // spring speed (rad/s): about half a second per card in a cascade
-  const LEAD = .06;       // shown may be aimed at the card after the next one once it is this close to the next
+  const OMEGA = 6;        // spring speed (rad/s): ~0.65 s to 90% of one card, ~1 s to settle it completely
+  const LEAD = .14;       // shown may be aimed at the card after the next one once it is this close to the next
   const SETTLE_MS = 140;  // scrolling stopped this long (no finger down): ease to the nearer card
   const DEAD_ZONE = .06;  // how far past the half-way point (in cards) before the front card swaps
   // The pose of a card d places from the front one, d = -2 ... +2: [side shift in card widths, side shift in px,
