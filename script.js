@@ -1530,11 +1530,19 @@ yield;
   // Phones stack the four stats (the bubble then slides up/down); tablets and desktop keep them in a row.
   const isStacked = () => !isDesktop() && items.length > 1 && items[1].offsetTop > items[0].offsetTop + 1;
 
+  // activeIndex: the stat the bubble is gliding to. litIndex: the stat whose text is lit. On desktop they are always the
+  // same; on mobile the text follows the bubble (see springTick), so a stat lights up as the bubble reaches it.
   let activeIndex = 0;
+  let litIndex = 0;
+  function setLit(index) {
+    if (index === litIndex) return;
+    litIndex = index;
+    items.forEach((item, i) => item.classList.toggle("active", i === index));
+  }
   function setActive(index) {
     if (index === activeIndex) return;
     activeIndex = index;
-    items.forEach((item, i) => item.classList.toggle("active", i === index));
+    setLit(index);
   }
 
   function syncBubbleWidth() {
@@ -1577,6 +1585,18 @@ yield;
   let springRaf = null;
   let lastTime = null;
   const OMEGA = 20; // glide speed (rad/s): settles in about a third of a second
+  // MOBILE: stat bar - phones are scrolled with flicks that cover far more ground than a mouse-wheel notch, so on <= 900px the bar
+  // runs slower and calmer than on desktop (desktop numbers above and in styles.css are untouched). Final tuning:
+  //   pin length    240svh (styles.css, .problem-stage::after; was 120svh; desktop holds 118vh) = 60svh of scrolling per stat
+  //   MOBILE_OMEGA  7 rad/s: a hop settles to 95% in ~0.68 s and to 99% in ~0.95 s (desktop OMEGA 20: 0.24 s / 0.33 s);
+  //                 still critically damped - no overshoot, bounce or wobble
+  //   colour fade   0.6 s (styles.css; desktop 0.35 s), and the text lights up when the bubble reaches it (nearestStat below)
+  //   MOBILE_LEAD   0.25: when the scroll position is more than one stat away from where the bubble is heading, the target moves on
+  //                 by ONE stat at a time, as soon as the bubble is within 0.25 of a stat's pitch of the current one. A hard flick
+  //                 therefore carries the bubble smoothly through every stat in turn (~0.4 s each) instead of teleporting to the end.
+  const MOBILE_OMEGA = 7;
+  const MOBILE_LEAD = 0.25;
+  let wantIndex = 0; // MOBILE: the stat the scroll position is on (activeIndex catches up with it one stat at a time)
 
   /* critical-spring-step:begin */
   // Exact (closed-form) step of a critically damped spring, so it is smooth
@@ -1592,12 +1612,31 @@ yield;
   }
   /* critical-spring-step:end */
 
+  // MOBILE: stat bar - the stats are equally spaced, so the bubble's place among them is (position - first) / pitch.
+  function statSpan() { return [itemPos(0), itemPos(1) - itemPos(0)]; }
+  function nearestStat(px, first, pitch) {
+    return pitch ? Math.max(0, Math.min(items.length - 1, Math.round((px - first) / pitch))) : 0;
+  }
+  // MOBILE: stat bar - moves the bubble's target (activeIndex) toward the stat the scroll is on (wantIndex): a single
+  // stat away it goes there at once; further away it advances ONE stat at a time, only once the bubble is nearly on the
+  // current one (or has to turn round), so the bubble passes through the stats in between instead of jumping past them.
+  function stepTarget() {
+    if (activeIndex === wantIndex) return;
+    if (reducedMotion) { activeIndex = wantIndex; return; }
+    const dir = wantIndex > activeIndex ? 1 : -1;
+    if (Math.abs(wantIndex - activeIndex) > 1 && (itemPos(activeIndex) - bubbleX) * dir > Math.abs(statSpan()[1]) * MOBILE_LEAD) return;
+    activeIndex += dir;
+  }
+
   function springTick(now) {
     if (lastTime === null) lastTime = now;
     const dt = Math.max(0, (now - lastTime) / 1000);
     lastTime = now;
+    const mobile = !isDesktop();
+    const [first, pitch] = mobile ? statSpan() : [0, 0];
+    if (mobile) stepTarget();
     const target = itemPos(activeIndex);
-    const [offset, vel] = criticalSpringStep(bubbleX - target, bubbleVel, OMEGA, dt);
+    const [offset, vel] = criticalSpringStep(bubbleX - target, bubbleVel, mobile ? MOBILE_OMEGA : OMEGA, dt);
     bubbleX = target + offset;
     bubbleVel = vel;
     const dx = target - bubbleX;
@@ -1605,8 +1644,9 @@ yield;
     const stretch = clamp(1 + Math.min(Math.abs(bubbleVel) * 0.00028, 0.2));
     setBubblePos(bubbleX);
     bar.style.setProperty("--bubble-stretch", stretch.toFixed(3));
+    if (mobile) setLit(nearestStat(bubbleX, first, pitch)); // the text lights up as the bubble reaches it
 
-    if (Math.abs(dx) > 0.05 || Math.abs(bubbleVel) > 0.5) {
+    if (Math.abs(dx) > 0.05 || Math.abs(bubbleVel) > 0.5 || (mobile && activeIndex !== wantIndex)) {
       springRaf = requestAnimationFrame(springTick);
     } else {
       bubbleX = target;
@@ -1624,6 +1664,7 @@ yield;
       bubbleVel = 0;
       setBubblePos(bubbleX);
       bar.style.setProperty("--bubble-stretch", "1");
+      setLit(activeIndex);
       return;
     }
     if (!springRaf) springRaf = requestAnimationFrame(springTick);
@@ -1649,18 +1690,22 @@ yield;
     requestSpring();
   }
 
-  // MOBILE: stat bar
-  function updateFromPin() {
-    scrollRaf = null;
+  // MOBILE: stat bar - the stat the scroll position is on
+  function pinStatIndex() {
     const cs = getComputedStyle(section);
     // where the bar sticks, px from the top of the screen / how far the page scrolls while it sticks. The fallbacks
     // (same numbers as the CSS) are for a browser that does not report a resolved value for these two.
     const pinTop = parseFloat(cs.top) || Math.max(88, (window.innerHeight - section.offsetHeight) / 2);
-    const travel = parseFloat(getComputedStyle(section.parentElement, "::after").height) || window.innerHeight * 1.2;
+    const travel = parseFloat(getComputedStyle(section.parentElement, "::after").height) || window.innerHeight * 2.4;
     const above = section.previousElementSibling; // the heading + copy above the bar
     const naturalTop = (above ? above.getBoundingClientRect().bottom : 0) + (parseFloat(cs.marginTop) || 0);
     const progress = travel > 0 ? clamp((pinTop - naturalTop) / travel) : 0;
-    setActive(Math.min(items.length - 1, Math.floor(progress * items.length)));
+    return Math.min(items.length - 1, Math.floor(progress * items.length));
+  }
+  function updateFromPin() {
+    scrollRaf = null;
+    wantIndex = pinStatIndex();
+    stepTarget(); // the bubble's target follows, one stat at a time (springTick keeps it going)
     requestSpring();
   }
   function requestScrollUpdate() {
@@ -1682,6 +1727,8 @@ yield;
         if (springRaf) { cancelAnimationFrame(springRaf); springRaf = null; }
         lastTime = null;
         bubbleVel = 0;
+        if (kind !== "desktop") { wantIndex = pinStatIndex(); activeIndex = wantIndex; } // phone/tablet: land on the stat the scroll is on
+        setLit(activeIndex);
         bubbleX = itemPos(activeIndex);
         bar.style.removeProperty("--bubble-x");
         bar.style.removeProperty("--bubble-y");

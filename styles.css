@@ -962,7 +962,7 @@ section[id], #top { scroll-margin-top: 6.875rem; }
    copy alone are taller than the screen, so they scroll away normally and only the stat bar is pinned: it
    stays in the middle of the screen while the page scrolls, and the glass bubble glides from stat to stat
    (script.js, the "MOBILE: stat bar" parts of the liquid bubble code). The empty space after the bar is
-   the scroll distance it stays pinned (about the same 120vh the desktop section holds for). Tablets keep the
+   the scroll distance it stays pinned (240svh here, twice the ~120vh the desktop section holds for: phones scroll in longer flicks, so the glide is slower and calmer too). Tablets keep the
    desktop pill (four stats in a row); phones held upright (<= 640px wide) stack the stats and the bubble
    slides up and down instead. */
 @media (max-width: 900px) {
@@ -990,13 +990,18 @@ section[id], #top { scroll-margin-top: 6.875rem; }
   @supports (height: 100svh) {
     .stat-bar-section { top: max(5.5rem, calc((100svh - var(--stat-bar-h)) / 2)); }
   }
-  /* empty space after the bar inside the stage: the bar can only stay stuck for as long as there is room left below it */
+  /* empty space after the bar inside the stage: the bar can only stay stuck for as long as there is room left below it.
+     Pin length 240svh (was 120svh): 60svh of scrolling per stat, so a flick of the thumb crosses only a couple of stats.
+     Desktop holds the bar for about 118vh and moves the bubble in 0.33 s; phones scroll in long flicks, so they get twice the
+     distance and a slower glide (MOBILE_OMEGA in script.js). If this value changes, change the fallback in pinStatIndex() too. */
   .problem-stage::after {
     content: "";
     flex: none;
-    height: 120vh;
-    height: 120svh;
+    height: 240vh;
+    height: 240svh;
   }
+  /* the lit stat fades at the pace of the bubble's glide (desktop 0.35s), see the "MOBILE: stat bar" constants in script.js */
+  .stat-item, .stat-item-value, .stat-item-label { transition-duration: 0.6s; }
   @media (prefers-reduced-motion: reduce) {
     .stat-item, .stat-item-value, .stat-item-label { transition: none; }
   }
