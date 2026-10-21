@@ -1,0 +1,422 @@
+/* ==========================================================================================
+   page.css - the extra styles for the landing pages (short-form-video-editing/, vsl-editing/,
+   youtube-video-editing/, video-ad-editing/).
+
+   Load order on every landing page:   /styles.css   then   /page.css
+   /styles.css (the homepage stylesheet, never edited for these pages) already holds the design
+   tokens (:root), the header + mobile menu, buttons (.btn, .btn-glass, .btn-solid and the
+   rotating beam), headings, .section-inner, the work cards (.work-grid / .work-card), the
+   pricing cards, .custom-production, the FAQ accordion, the closing .cta, the footer, the
+   Get Started dialog (.choose*), the video lightbox and the .reveal fade. This file only adds
+   what those pages need on top: the hero without video, the section blocks, the few things
+   that are links here but buttons on the homepage, and the no-JavaScript fallbacks.
+
+   Everything is built on the homepage's own tokens (--amber, --muted, --line, --gutter, ...)
+   and its rem scale, so the pages grow and shrink with the homepage.
+   See PAGE-TEMPLATE.md for how the pages are put together.
+   ========================================================================================== */
+
+/* ---------- Accessibility helpers ---------- */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 300;
+  padding: 0.75rem 1.25rem;
+  border-radius: 999px;
+  background: var(--amber);
+  color: #120a05;
+  font-weight: 600;
+  font-size: 0.85rem;
+  transform: translateY(-200%);
+}
+.skip-link:focus { transform: none; }
+
+/* A visible keyboard focus ring for the controls this page adds (the homepage keeps the browser default for the rest). */
+.faq-question:focus-visible,
+.pricing-toggle-option:focus-visible,
+.work-card:focus-visible,
+.related-card:focus-visible,
+.footer-links a:focus-visible,
+.hamburger:focus-visible,
+.mobile-services-toggle:focus-visible,
+.nav-links a:focus-visible,
+.nav-links .nav-dropdown-trigger:focus-visible,
+.logo:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 3px;
+}
+
+/* The hamburger is a small icon; this invisible layer makes the touch target about 44px without changing how the header looks. */
+.hamburger { position: relative; }
+.hamburger::after { content: ""; position: absolute; inset: -0.5rem -0.4rem; }
+
+/* ---------- No-JavaScript fallbacks (the pages work, just without the effects) ---------- */
+html:not(.js) .reveal { opacity: 1; transform: none; }
+html:not(.js) .faq-answer { max-height: none; padding: 0 0.25rem 1.5625rem; }
+html:not(.js) .pricing-toggle { display: none; }
+html:not(.js) .pricing-panel + .pricing-panel { margin-top: 3rem; }
+html:not(.js) .pricing-tier-note { margin-top: var(--heading-gap); }
+html:not(.js) .pricing-panel + .pricing-panel .pricing-tier-note { margin-top: 0; }
+
+/* ---------- Background: the homepage's dark aurora, drawn with CSS only ----------
+   The homepage plays a ~20 MB gradient video behind a dark veil; these pages draw the same warm,
+   very dim glow with two static gradients, so no video is downloaded. */
+.page-landing .aurora {
+  background:
+    radial-gradient(64% 46% at 68% 26%, rgba(132, 56, 18, 0.30), transparent 72%),
+    radial-gradient(58% 42% at 22% 74%, rgba(104, 42, 14, 0.24), transparent 74%),
+    rgba(10, 10, 9, 0.96);
+}
+
+/* ---------- Header: the Services menu holds links here (it holds buttons on the homepage) ---------- */
+.nav-links .services-dropdown a {
+  display: block;
+  width: 100%;
+  padding: 0.5625rem 0.875rem;
+  border-radius: 0.75rem;
+  text-align: left;
+  white-space: nowrap;
+  font-size: 0.86rem;
+  color: rgba(247, 246, 243, 0.78);
+  background: transparent;
+}
+.nav-links .services-dropdown a:hover,
+.nav-links .services-dropdown a:focus-visible { color: var(--amber); background: rgba(248, 98, 21, 0.12); }
+.nav-links .services-dropdown a[aria-current="page"] { color: var(--amber); }
+.nav-links .services-dropdown li + li.services-dropdown-all {
+  margin-top: 0.25rem;
+  padding-top: 0.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.09);
+}
+.mobile-menu .mobile-services-list a {
+  display: block;
+  width: 100%;
+  padding: 0.5625rem 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.mobile-menu .mobile-services-list li:last-child a { border-bottom: 0; }
+.mobile-menu .mobile-services-list a:hover,
+.mobile-menu .mobile-services-list a[aria-current="page"] { color: var(--amber); }
+
+/* ---------- Hero: the homepage hero (.hero / .hero-bg), but with still frames instead of four playing clips ---------- */
+.page-hero.hero {
+  min-height: clamp(34rem, 80vh, 47rem);
+  align-items: flex-end;
+}
+.page-hero .hero-content {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: 9.5rem var(--gutter) 5.5rem;
+  transform: none;
+}
+.page-hero-still {
+  background-size: cover;
+  background-position: center 28%;
+  background-repeat: no-repeat;
+  background-color: #0d0c0a;
+}
+/* a soft extra shade on the text side, so the words inside the still frames never fight the headline */
+.page-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(8, 8, 9, 0.66) 0%, rgba(8, 8, 9, 0.4) 45%, transparent 78%);
+  -webkit-mask-image: var(--hero-fade-shade);
+  mask-image: var(--hero-fade-shade);
+}
+.page-hero .hero-title {
+  max-width: 17ch;
+  margin-bottom: 1.75rem;
+  font-size: clamp(2.35rem, 5.6vw, 4.7rem);
+  line-height: 1;
+}
+.page-hero .hero-title .amber-word { display: inline; }
+.page-hero-lead {
+  max-width: 41rem;
+  margin-bottom: 2.25rem;
+  color: rgba(247, 246, 243, 0.74);
+  font-size: clamp(1rem, 1.35vw, 1.18rem);
+  line-height: 1.65;
+}
+.page-cta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
+.page-cta-row .btn { padding: 1.0625rem 2.25rem; }
+@media (max-width: 900px) {
+  .page-hero.hero { min-height: 0; }
+  .page-hero .hero-content { padding: 8rem var(--gutter) 4rem; }
+  .page-hero .hero-title { font-size: clamp(2rem, 8.6vw, 3.4rem); max-width: none; }
+}
+@media (max-width: 560px) {
+  .page-cta-row { flex-direction: column; align-items: stretch; }
+  .page-cta-row .btn { width: 100%; }
+}
+
+/* ---------- Generic section rhythm ---------- */
+.page-section { padding: 5rem 0; }
+.page-section .section-inner > h2 { margin-bottom: 1.2rem; }
+.page-section .section-sub { margin-bottom: 2.75rem; max-width: 46rem; text-wrap: pretty; }
+.page-section .section-sub strong { color: var(--chalk); font-weight: 600; }
+.text-link {
+  color: var(--chalk);
+  border-bottom: 1px solid var(--amber);
+  padding-bottom: 0.1rem;
+  transition: color 0.3s var(--ease-soft);
+}
+.text-link:hover,
+.text-link:focus-visible { color: var(--amber); }
+
+/* ---------- Feature cards ("What we edit", "Who it suits") ---------- */
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+.feature-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.feature-card {
+  position: relative;
+  padding: 1.75rem 1.75rem 1.875rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 1.5rem;
+  background: linear-gradient(112deg, rgba(255, 255, 255, 0.13) 0%, rgba(255, 255, 255, 0.055) 45%, rgba(11, 9, 8, 0.88) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), inset 0 -1px 0 rgba(0, 0, 0, 0.3), 0 28px 60px -34px rgba(0, 0, 0, 0.7);
+}
+.feature-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(92% 128% at 90% -14%, rgba(248, 98, 21, 0.26), transparent 56%);
+  pointer-events: none;
+}
+.feature-card > * { position: relative; }
+.feature-kicker {
+  display: block;
+  margin-bottom: 1.1rem;
+  color: var(--amber);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.feature-card h3 {
+  margin-bottom: 0.7rem;
+  font-size: 1.28rem;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+.feature-card p { color: var(--muted); font-size: 0.93rem; line-height: 1.6; }
+.feature-card p a { color: var(--amber-light); border-bottom: 1px solid rgba(255, 171, 102, 0.4); }
+.feature-card p a:hover { color: var(--chalk); }
+
+/* ---------- Our work: the homepage's .work-grid / .work-card, with a caption under each clip ---------- */
+.page-work.work { padding: 5rem 0; }
+.clip { min-width: 0; }
+.clip .work-card {
+  display: block;
+  width: 100%;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  transition: scale 0.3s var(--pop-ease), translate 0.3s var(--pop-ease), border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.clip-poster,
+.clip-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.clip-video { opacity: 0; transition: opacity 0.3s var(--ease-soft); }
+.clip.is-playing .clip-video { opacity: 1; }
+.clip-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.9rem;
+  height: 2.9rem;
+  border-radius: 50%;
+  background: rgba(10, 10, 9, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  transform: translate(-50%, -50%);
+  transition: background 0.3s var(--ease-soft), opacity 0.25s ease, transform 0.3s var(--pop-ease);
+  pointer-events: none;
+}
+.clip-play svg { width: 1rem; height: 1rem; margin-left: 0.1rem; color: var(--chalk); transition: color 0.3s var(--ease-soft); }
+.clip.is-playing .clip-play { opacity: 0; }
+.clip .work-card-tag { z-index: 1; }
+@media (hover: hover) and (pointer: fine) {
+  .clip .work-card:hover .clip-play { background: var(--amber); transform: translate(-50%, -50%) scale(1.1); }
+  .clip .work-card:hover .clip-play svg { color: #0a0a09; }
+}
+.clip .work-card:focus-visible { border-color: var(--pop-border); }
+.clip figcaption {
+  margin-top: 0.8rem;
+  padding: 0 0.2rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+.page-work .work-grid { row-gap: 1.75rem; }
+.page-work .work-portfolio-link { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.25rem 2.5rem; }
+@media (prefers-reduced-motion: reduce) {
+  .clip .work-card { transition: border-color 0.3s ease; }
+  .clip-video { transition: none; }
+}
+
+/* ---------- Pricing: both editing levels are in the HTML; the toggle (page.js) shows one at a time ---------- */
+html.js .pricing-panel { display: none; }
+html.js .pricing-panel.is-active { display: block; }
+.pricing-tier-note {
+  margin: 0 0 1.25rem var(--heading-indent, 0px);
+  max-width: 44rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+.pricing .pricing-intro {
+  margin: 1.2rem 0 0;
+  max-width: 44rem;
+  color: var(--muted);
+  font-size: 1.05rem;
+  line-height: 1.65;
+  text-wrap: pretty;
+}
+
+/* ---------- How it works: four steps in a row (a flat version of the homepage's pinned section) ---------- */
+.steps {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  counter-reset: step;
+}
+.step {
+  position: relative;
+  padding: 1.75rem 1.5rem 1.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.025);
+}
+.step::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 1.5rem;
+  width: 2.75rem;
+  height: 2px;
+  background: linear-gradient(90deg, var(--amber), transparent);
+}
+.step-num { display: block; margin-bottom: 1rem; color: var(--amber); font-size: 0.85rem; font-weight: 500; letter-spacing: 0.06em; }
+.step h3 { margin-bottom: 0.55rem; font-size: 1.15rem; letter-spacing: -0.01em; }
+.step p { color: var(--muted); font-size: 0.93rem; line-height: 1.6; overflow-wrap: break-word; }
+.steps-more { margin-top: 2rem; color: var(--muted); font-size: 0.95rem; }
+
+/* ---------- A highlighted note ("when it is not the right fit") ---------- */
+.note-box {
+  margin-top: 1.5rem;
+  padding: 1.875rem 2.125rem;
+  border: 1px solid rgba(248, 98, 21, 0.25);
+  border-radius: 1.375rem;
+  background: radial-gradient(62% 180% at 0% 50%, rgba(248, 98, 21, 0.13), transparent 65%), rgba(255, 255, 255, 0.025);
+}
+.note-box h3 { margin-bottom: 0.6rem; font-size: clamp(1.3rem, 2.2vw, 1.7rem); letter-spacing: -0.03em; }
+.note-box p { max-width: 52rem; color: var(--muted); font-size: 0.95rem; line-height: 1.65; }
+.note-box p + p { margin-top: 0.75rem; }
+.note-box a { color: var(--amber-light); border-bottom: 1px solid rgba(255, 171, 102, 0.4); }
+.note-box a:hover { color: var(--chalk); }
+
+/* ---------- Related pages ("Need more than short-form?") ---------- */
+.related-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.related-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.5rem 1.625rem 1.625rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.025);
+  transition: border-color 0.3s ease, background-color 0.3s ease, transform 0.3s var(--btn-ease);
+}
+.related-card strong { font-family: var(--font-display); font-size: 1.15rem; font-weight: 600; letter-spacing: -0.02em; }
+.related-card span { color: var(--muted); font-size: 0.9rem; line-height: 1.5; }
+.related-card .related-go { margin-top: auto; padding-top: 0.5rem; color: var(--amber); font-size: 0.78rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
+@media (hover: hover) and (pointer: fine) {
+  .related-card:hover { border-color: var(--btn-hover-border); background: rgba(248, 98, 21, 0.06); transform: translateY(-0.2rem); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .related-card { transition: border-color 0.3s ease, background-color 0.3s ease; }
+  .related-card:hover { transform: none; }
+}
+
+/* ---------- FAQ: the homepage accordion, with the answers in the HTML ---------- */
+.faq-answer p + p { margin-top: 0.75rem; }
+.faq-answer a { color: var(--amber-light); border-bottom: 1px solid rgba(255, 171, 102, 0.4); }
+.faqs .faq-list { max-width: 53.75rem; }
+
+/* ---------- Footer: a plain text row of links to the service pages (crawlable, and handy) ---------- */
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0 1.5rem;
+  max-width: 100%;
+  margin-block: -0.5rem;
+}
+.footer-links a {
+  padding: 0.6rem 0.25rem; /* a comfortable tap target without a bigger look */
+  color: var(--muted);
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+  transition: color 0.3s var(--ease-soft);
+}
+.footer-links a:hover,
+.footer-links a:focus-visible { color: var(--amber); }
+.footer-tagline { max-width: 34rem; margin-top: -0.75rem; color: var(--muted-2); font-size: 0.85rem; line-height: 1.55; }
+
+/* ---------- Lightbox / dialog: allow the focus ring on the close button ---------- */
+.lightbox-close:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; border-radius: 0.5rem; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1100px) {
+  .feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 900px) {
+  .page-section { padding: 4rem 0; }
+  .page-work.work { padding: 4rem 0; }
+  .feature-grid--3,
+  .related-grid { grid-template-columns: minmax(0, 1fr); }
+  .note-box { padding: 1.5rem; }
+  .page-work .work-grid { row-gap: 1.5rem; }
+}
+@media (max-width: 560px) {
+  .feature-grid,
+  .steps { grid-template-columns: minmax(0, 1fr); }
+  .feature-card { padding: 1.5rem 1.5rem 1.625rem; }
+  .clip figcaption { font-size: 0.78rem; }
+  .footer-links { gap: 0 1rem; }
+}
