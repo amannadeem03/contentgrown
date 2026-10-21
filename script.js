@@ -432,8 +432,10 @@ function setWorkCardFormat(card, isLandscape) {
   // featured list and hideFromAll, so it is safe to both hide and unhide here.
   if (activeWorkFilter === "all") card.classList.toggle("hidden", !shownInAll(card));
 }
+const workSampleCount = {}; // per tab label, so each preview clip gets its own accessible name ("Ads - client work sample 3")
 workItems.forEach((item, index) => {
   const src = `${PORTFOLIO_BASE}${item.file}`;
+  const sampleNo = (workSampleCount[item.label] = (workSampleCount[item.label] || 0) + 1);
   // The grid only ever shows these at thumbnail size, so the on-hover
   // preview plays a small muted proxy (640px wide, no audio) instead of
   // the full 1080p file - that's what was making hover playback take ages
@@ -457,7 +459,7 @@ workItems.forEach((item, index) => {
   // Nothing for this card is downloaded at page load: the poster still is fetched later by
   // loadWorkPosters() (below), and the preview clip only when the visitor first hovers the card.
   card.innerHTML = `
-    <video muted loop playsinline preload="none" data-src="${gridSrc}"></video>
+    <video muted loop playsinline preload="none" data-src="${gridSrc}" aria-label="${item.label} - client work sample ${sampleNo}"></video>
     <span class="work-card-tag">${item.label}</span>
   `;
   const video = card.querySelector("video");

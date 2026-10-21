@@ -742,6 +742,19 @@ section[id], #top { scroll-margin-top: 6.875rem; }
 }
 .hero-title .amber-word { display: inline-flex; flex-wrap: wrap; justify-content: flex-start; align-items: center; gap: 0.28em; }
 .w-letter-word { display: inline-flex; align-items: center; }
+/* The arrow below is the "W" of "Watching". This is that letter as real text, so search engines, copy/paste and
+   reader mode see the heading as "Worth Watching". It is clipped to nothing and out of the flow: it paints no
+   pixel and takes no space (the masked arrow is the only thing drawn). */
+.w-letter-word .w-letter-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
 .hero-title .w-letter {
   display: inline-block;
   height: 0.85em;
