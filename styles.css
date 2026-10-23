@@ -1582,6 +1582,12 @@ section[id], #top { scroll-margin-top: 6.875rem; }
 .social-btn--whatsapp  { --b: 37, 211, 102; }
 .social-btn--gmail     { --b: 234, 67, 53; }
 
+/* Pill links to the four service pages, under the social buttons. */
+.footer-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; max-width: 100%; margin-top: -0.25rem; }
+.footer-links a { padding: 0.6rem 1.15rem; border: 1px solid rgba(255, 255, 255, 0.22); border-radius: 999px; color: #d9d6cf; font-size: 0.85rem; letter-spacing: 0.02em; transition: color 0.3s ease, border-color 0.3s ease; }
+.footer-links a:hover, .footer-links a:focus-visible { border-color: var(--amber); color: var(--amber); }
+@media (max-width: 560px) { .footer-links { gap: 0.6rem; } .footer-links a { padding: 0.55rem 1rem; } }
+
 /* Direct child of .site-footer (not of the width-capped .footer-inner), so the line spans the full viewport. */
 .footer-legal {
   text-align: center;
